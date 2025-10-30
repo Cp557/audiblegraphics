@@ -54,7 +54,7 @@ export default function SignInPage() {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -63,6 +63,12 @@ export default function SignInPage() {
       });
 
       if (error) throw error;
+
+      // Check if user already exists (identities array will be empty)
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setError('This email is already registered. Please sign in instead.');
+        return;
+      }
 
       setSuccess('Account created! Please check your email to verify your account.');
       setEmail('');
