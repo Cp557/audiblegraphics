@@ -1,12 +1,10 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import logo from "../../../public/logo.png";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from '@/lib/supabase/client';
 
@@ -61,38 +59,13 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
-      {/* Header */}
-      <header className="bg-white py-4 border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-6">
-          <Link href="/" className="flex items-center w-fit">
-            <div className="h-10 w-10 relative">
-              <Image 
-                src={logo} 
-                alt="Aim90 Logo" 
-                fill
-                style={{ objectFit: 'contain' }}
-                priority
-              />
-            </div>
-            <span className="ml-2 text-xl font-semibold text-gray-900">
-              Aim90
-            </span>
-          </Link>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">
-              Set New Password
-            </CardTitle>
-            <CardDescription className="text-center">
-              Enter your new password below
-            </CardDescription>
-          </CardHeader>
+    <div className="min-h-screen bg-white flex items-center justify-center px-6 py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">
+            Set New Password
+          </CardTitle>
+        </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -125,7 +98,7 @@ export default function ResetPasswordPage() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8]"
+                className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
                 disabled={loading}
               >
                 {loading ? 'Updating...' : 'Update Password'}
@@ -142,7 +115,6 @@ export default function ResetPasswordPage() {
             </form>
           </CardContent>
         </Card>
-      </main>
     </div>
   );
 }
