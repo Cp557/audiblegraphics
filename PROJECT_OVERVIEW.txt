@@ -1,0 +1,55 @@
+Aim90 is a 90-day personal growth app inspired by Napoleon Hill’s Definite Chief Aim, Burning Desire, and Autosuggestion.
+Users define one Definite Chief Aim (DCA), complete three daily critical tasks, and do daily check-ins with an AI accountability partner named Alfie.
+
+Tech Stack
+Flutter
+Supabase (Backend + PostgreSQL + Auth + Edge Functions)
+Aflie (GPT-realtime-mini)
+Stripe on web for reoccuring payment processing with 2 subscription products - 
+1. 'Aim90 Pro (Annually)' $99.99 
+2. 'Aim90 Pro (Monthly)' $9.99
+
+Authentication
+Using Supabase Email Auth only (no Google or Apple login).
+Simple email + password flow.
+Row Level Security (RLS) ensures each user can only access their own data.
+
+
+aim90_table - Each user gets 1 row, past tasks are not stored; when the user sets their critical tasks it overwrites the existing tasks.
+
+Fields:
+id - uuid (primary key, uuid_generate_v4())
+user_id - uuid (foreign key to auth.users.id)
+aim - text (the user’s Definite Chief Aim)
+start_date - date (when the 90 days begin)
+task1 - text 
+task2 - text 
+task3 - text 
+task1_complete - boolean (default false)
+task2_complete - boolean (default false)
+task3_complete - boolean (default false)
+last_updated - timestamptz 
+user_context - text (Optional: The user can give Alfie more context)
+stripe_customer_id - text
+stripe_subscription_id - text
+subscription_status - text 
+plan_price_id - text (Annual, Monthly)
+pro_start_date - timestampz 
+pro_end_date - timestampz
+
+App Screens
+starter_screen - login, signup, get forgot password email
+reset_password - type new password
+Aim - view DCA, edit the daily tasks ()
+Chat - voice conversations with Alfie 
+Progress - 90-day grid or completion tracker 
+Settings - edit DCA, edit user_context, subscription, about, logout
+
+Colors:
+Primary (blue): #4A90E2
+Background: #F5F5F5
+Text: #1A1A1A
+Surface: #FFFFFF
+Text secondary: #666666
+Logo color: #fb5d5a
+Light green used for progress grid: #D1FAE5
