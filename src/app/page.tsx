@@ -49,9 +49,9 @@ const HomePage = () => {
     }
   }
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FEFEFD]">
       {/* Header */}
-      <header className="bg-white py-4">
+      <header className="bg-[#FEFEFD] py-4">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center cursor-pointer">
@@ -84,9 +84,9 @@ const HomePage = () => {
 
       <main>
         {/* Hero Section */}
-        <section className="pt-16 pb-16 bg-white">
+        <section className="pt-16 pb-16 bg-[#FEFEFD]">
           <div className="max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center">
-            <Badge variant="outline" className="mb-4">Mobile App</Badge>
+            <Badge variant="outline" className="mb-4 bg-white">Mobile App</Badge>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Transform your life in 90 days.</h2>
             <div className="flex flex-wrap gap-10 justify-center mt-10">
               <Link href="https://www.apple.com/app-store/" target="_blank" rel="noopener noreferrer">
@@ -110,7 +110,7 @@ const HomePage = () => {
         <section id="features" className="py-16">
           <div className="max-w-5xl mx-auto px-6">
             <div className="text-center mb-14">
-              <Badge variant="outline" className="mb-4">Features</Badge>
+              <Badge variant="outline" className="mb-4 bg-white">Features</Badge>
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything You Need to Succeed</h2>
             </div>
             
@@ -161,7 +161,7 @@ const HomePage = () => {
         <section className="py-16">
           <div className="max-w-5xl mx-auto px-6">
             <div className="text-center mb-14">
-              <Badge variant="outline" className="mb-4">Benefits</Badge>
+              <Badge variant="outline" className="mb-4 bg-white">Benefits</Badge>
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Aim90?</h2>
             </div>
             
@@ -208,7 +208,7 @@ const HomePage = () => {
         <section className="py-16">
           <div className="max-w-5xl mx-auto px-6">
             <div className="text-center mb-8">
-              <Badge variant="outline" className="mb-4">Philosophy</Badge>
+              <Badge variant="outline" className="mb-4 bg-white">Philosophy</Badge>
               <h2 className="text-3xl font-bold text-gray-900 mb-8">The Science of Achievement</h2>
             </div>
 
@@ -238,7 +238,7 @@ const HomePage = () => {
         <section id="alfie" className="pt-16 pb-6">
           <div className="max-w-5xl mx-auto px-6">
             <div className="text-center mb-6">
-              <Badge variant="outline" className="mb-4">Alfie</Badge>
+              <Badge variant="outline" className="mb-4 bg-white">Alfie</Badge>
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Your AI Accountability Partner</h2>
             </div>
             <div className="flex justify-center mb-4">
@@ -253,7 +253,7 @@ const HomePage = () => {
         {/* Pricing Section */}
         <section id="pricing" className="py-16">
           <div className="max-w-5xl mx-auto px-6 text-center mb-14">
-            <Badge variant="outline" className="mb-6">Pricing</Badge>
+            <Badge variant="outline" className="mb-6 bg-white">Pricing</Badge>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Plan</h2>
           </div>
 
@@ -284,7 +284,6 @@ const HomePage = () => {
                 <ul className="text-sm text-gray-600 space-y-2">
                   <li>✔︎ Everything in Free</li>
                   <li>✔︎ Alfie AI accountability partner</li>
-                  <li>✔︎ Morning/general/night check-ins</li>
                   <li>✔︎ Personalized insights</li>
                 </ul>
                 <Button className="w-full mt-4 bg-[#4A90E2] hover:bg-[#3a7bc8]">Coming Soon</Button>
@@ -300,7 +299,7 @@ const HomePage = () => {
     </main>
 
       {/* Footer */}
-      <footer className="bg-white py-8 px-6">
+      <footer className="bg-[#FEFEFD] py-8 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-6 md:mb-0">
