@@ -1,19 +1,23 @@
+This repo is the website (aim90.org) for the aim90 mobile app. The website has a landing page, sign in, sign up, reset password and billing & subscription management through stripe.
+The website's main purpose is for users to manage their subscription through Stripe checkout for reoccuring payment processing with 2 subscription products:
+1. 'Aim90 Pro (Quarterly)' $29.99 
+2. 'Aim90 Pro (Monthly)' $11.99
+
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+STRIPE_WEBHOOK_SECRET
+STRIPE_SECRET_KEY
+NEXT_STRIPE_PUBLISHABLE_KEY
+NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID
+NEXT_PUBLIC_STRIPE_QUARTERLY_PRICE_ID
+
 Aim90 is a 90-day personal growth app inspired by Napoleon Hill’s Definite Chief Aim, Burning Desire, and Autosuggestion.
 Users define one Definite Chief Aim (DCA), complete three daily critical tasks, and do daily check-ins with an AI accountability partner named Alfie.
-
-Tech Stack
-Flutter
-Supabase (Backend + PostgreSQL + Auth + Edge Functions)
-Aflie (GPT-realtime-mini)
-Stripe on web for reoccuring payment processing with 2 subscription products - 
-1. 'Aim90 Pro (Annually)' $99.99 
-2. 'Aim90 Pro (Monthly)' $9.99
 
 Authentication
 Using Supabase Email Auth only (no Google or Apple login).
 Simple email + password flow.
 Row Level Security (RLS) ensures each user can only access their own data.
-
 
 aim90_table - Each user gets 1 row, past tasks are not stored; when the user sets their critical tasks it overwrites the existing tasks.
 
@@ -33,19 +37,16 @@ user_context - text (Optional: The user can give Alfie more context)
 stripe_customer_id - text
 stripe_subscription_id - text
 subscription_status - text 
-plan_price_id - text (Annual, Monthly)
+plan_price_id - text (Quarterly, Monthly)
 pro_start_date - timestampz 
 pro_end_date - timestampz
 
-App Screens
-starter_screen - login, signup, get forgot password email
-reset_password - type new password
-Aim - view DCA, edit the daily tasks ()
-Chat - voice conversations with Alfie 
-Progress - 90-day grid or completion tracker 
-Settings - edit DCA, edit user_context, subscription, about, logout
+Mobile app tech stack:
+Flutter / Dart
+Supabase (DB + PostgreSQL + Auth + Edge Functions)
+GPT-realtime-mini (Alfie)
 
-Colors:
+Mobile app colors:
 Primary (blue): #4A90E2
 Background: #F5F5F5
 Text: #1A1A1A
