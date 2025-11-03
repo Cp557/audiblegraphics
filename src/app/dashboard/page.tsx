@@ -4,11 +4,16 @@ import Link from 'next/link';
 import logo from "../../../public/logo.png";
 import { createClient } from '@/lib/supabase/server';
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import SubscribeButtons from '@/components/SubscribeButtons';
 import ManageSubscriptionButton from '@/components/ManageSubscriptionButton';
+import { hasActiveSubscription, getSubscriptionWarning } from '@/lib/utils/subscription';
+import { Info } from 'lucide-react';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
   const supabase = await createClient();
   
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -17,14 +22,19 @@ export default async function DashboardPage() {
     redirect('/sign-in');
   }
 
+  // Resolve searchParams promise and get the plan
+  const params = await searchParams;
+  const plan = (params.plan === 'quarterly' ? 'quarterly' : 'monthly') as 'monthly' | 'quarterly';
+
   // Fetch user's subscription status from aim90_table
   const { data: userData } = await supabase
     .from('aim90_table')
-    .select('stripe_customer_id, subscription_status, plan_price_id')
+    .select('stripe_customer_id, subscription_status, plan_price_id, pro_end_date, cancel_at_end_date')
     .eq('user_id', user.id)
     .single();
 
-  const hasActiveSubscription = userData?.subscription_status === 'active';
+  const isSubscriptionActive = hasActiveSubscription(userData);
+  const subscriptionWarning = getSubscriptionWarning(userData);
 
   return (
     <div className="min-h-screen bg-[#FEFEFD]">
@@ -59,115 +69,90 @@ export default async function DashboardPage() {
       <div className="max-w-5xl mx-auto border-t border-gray-200" />
 
       {/* Main Content */}
-      <main className="flex items-center justify-center min-h-screen px-6 py-12">
-        <div className="max-w-4xl w-full space-y-8">
-          {/* Header Section */}
-          <div className="text-center">
-            <h1 className="text-5xl font-bold text-gray-900">
-              Manage your billing and subscription
-            </h1>
-            {hasActiveSubscription && (
-              <Badge className="mt-3 bg-green-500 hover:bg-green-600">
-                Active Subscription
-              </Badge>
-            )}
-          </div>
-
+      <main className="flex items-center justify-center px-6 py-20">
+        <div className="max-w-4xl w-full">
           {/* Action Buttons Grid */}
-          <div className="space-y-6">
+          <div className="space-y-3">
             {/* Primary CTA - Subscribe or Manage */}
-            {!hasActiveSubscription ? (
+            {!isSubscriptionActive ? (
               <div>
                 <h2 className="text-2xl font-bold text-center mb-4">Choose Your Plan</h2>
-                <SubscribeButtons />
+                <SubscribeButtons initialPlan={plan} />
               </div>
             ) : (
-              <ManageSubscriptionButton 
-                subscriptionStatus={userData?.subscription_status}
-                planPriceId={userData?.plan_price_id}
-              />
+              <div className="mt-30">
+                <h2 className="text-2xl font-bold text-center mb-8">Manage Your Subscription</h2>
+                <ManageSubscriptionButton 
+                  subscriptionStatus={userData?.subscription_status}
+                  planPriceId={userData?.plan_price_id}
+                  cancelAtEndDate={userData?.cancel_at_end_date}
+                  proEndDate={userData?.pro_end_date}
+                />
+              </div>
             )}
-
-          {/* Secondary Actions */}
-          <div className="grid md:grid-cols-2 gap-6 mt-6">
-
-            {/* Manage Subscription */}
-            <button className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-[#4A90E2] hover:shadow-md transition-all duration-200 text-left group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 bg-gray-100 group-hover:bg-blue-50 rounded-lg flex items-center justify-center transition-colors">
-                  <svg className="w-5 h-5 text-gray-600 group-hover:text-[#4A90E2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                </div>
-                <svg className="w-5 h-5 text-gray-400 group-hover:text-[#4A90E2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Manage Subscription</h3>
-              <p className="text-sm text-gray-600">View and update your plan details</p>
-            </button>
-
-            {/* Update Payment Method */}
-            <button className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-[#4A90E2] hover:shadow-md transition-all duration-200 text-left group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 bg-gray-100 group-hover:bg-blue-50 rounded-lg flex items-center justify-center transition-colors">
-                  <svg className="w-5 h-5 text-gray-600 group-hover:text-[#4A90E2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                </div>
-                <svg className="w-5 h-5 text-gray-400 group-hover:text-[#4A90E2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Payment Method</h3>
-              <p className="text-sm text-gray-600">Update your payment details</p>
-            </button>
-
-            {/* Billing History */}
-            <button className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-[#4A90E2] hover:shadow-md transition-all duration-200 text-left group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 bg-gray-100 group-hover:bg-blue-50 rounded-lg flex items-center justify-center transition-colors">
-                  <svg className="w-5 h-5 text-gray-600 group-hover:text-[#4A90E2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <svg className="w-5 h-5 text-gray-400 group-hover:text-[#4A90E2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Billing History</h3>
-              <p className="text-sm text-gray-600">View past invoices and receipts</p>
-            </button>
-
-            {/* Support/Help */}
-            <button className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-[#4A90E2] hover:shadow-md transition-all duration-200 text-left group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 bg-gray-100 group-hover:bg-blue-50 rounded-lg flex items-center justify-center transition-colors">
-                  <svg className="w-5 h-5 text-gray-600 group-hover:text-[#4A90E2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <svg className="w-5 h-5 text-gray-400 group-hover:text-[#4A90E2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Help & Support</h3>
-              <p className="text-sm text-gray-600">Get help with your subscription</p>
-            </button>
+            {/* Inline Note (moved closer to card) */}
+            <div className="text-center space-y-1">
+              <p className="text-xs text-gray-400">
+                Signed in as <span className="font-medium text-gray-500">{user.email}</span>
+              </p>
+              <p className="text-xs text-gray-400">
+                Secure payment processing powered by Stripe
+              </p>
+            </div>
           </div>
+          
+        </div>
+      </main>
+
+      <div className="flex items-center justify-center gap-2 text-xs text-gray-400 py-6">
+        <Info className="h-3.5 w-3.5" />
+        <span>
+          We process payment on our website to avoid paying Apple's 30% & Google's 15% fees on mobile apps.
+        </span>
+      </div>
+
+      <div className="max-w-5xl mx-auto border-t border-gray-200" />
+
+      {/* Footer */}
+      <footer className="bg-[#FEFEFD] py-8 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-6 md:mb-0">
+              <Link href="/" className="flex items-center cursor-pointer">
+                <div className="h-6 w-6 relative">
+                  <Image 
+                    src={logo} 
+                    alt="Aim90 Logo" 
+                    fill
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
+                <span className="ml-2 text-base font-semibold text-gray-900">
+                  Aim90
+                </span>
+              </Link>
+            </div>
+            
+            <div className="flex space-x-6">
+              <Link href="https://docs.google.com/document/d/1_tyc6xjePKLSjjDrFP5Cb5D7iqdfbQcl/edit?usp=sharing&ouid=105580698223202217739&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="footer-link">
+                <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Terms of Service</Button>
+              </Link>
+              <Link href="https://docs.google.com/document/d/1idJSO9TVnZKyM49ATBcWKxi9gr0v9fVa/edit?usp=sharing&ouid=105580698223202217739&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="footer-link">
+                <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Privacy</Button>
+              </Link>
+              <Link href="mailto:contact@aim90.org" target="_blank" rel="noopener noreferrer" className="footer-link">
+                <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Contact</Button>
+              </Link>
+            </div>
           </div>
 
-          {/* Footer Note */}
-          <div className="text-center pt-4 space-y-1">
-            <p className="text-xs text-gray-400">
-              Signed in as <span className="font-medium text-gray-500">{user.email}</span>
-            </p>
-            <p className="text-xs text-gray-400">
-              Secure payment processing powered by Stripe
+          <div className="text-center mt-8">
+            <p className="text-xs text-gray-500">
+              &copy; {new Date().getFullYear()} Aim90. All rights reserved.
             </p>
           </div>
         </div>
-      </main>
+      </footer>
     </div>
   );
 }

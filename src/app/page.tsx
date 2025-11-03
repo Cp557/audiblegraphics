@@ -9,10 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import LottieButton from "@/components/LottieButton";
 import { createClient } from '@/lib/supabase/client';
+import Header from "@/components/Header";
+import PricingCard from "@/components/PricingCard";
  
 
 const HomePage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,12 +24,14 @@ const HomePage = () => {
     // Check initial session
     supabase.auth.getSession().then((response: any) => {
       setIsLoggedIn(!!response.data.session);
+      setUserEmail(response.data.session?.user?.email);
       setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       setIsLoggedIn(!!session);
+      setUserEmail(session?.user?.email);
     });
 
     return () => subscription.unsubscribe();
@@ -50,37 +55,15 @@ const HomePage = () => {
   }
   return (
     <div className="min-h-screen bg-[#FEFEFD]">
-      {/* Header */}
-      <header className="bg-[#FEFEFD] py-4">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center cursor-pointer">
-              <div className="h-10 w-10 relative">
-                <Image 
-                  src={logo} 
-                  alt="Aim90 Logo" 
-                  fill
-                  style={{ objectFit: 'contain' }}
-                  priority
-                />
-              </div>
-              <span className="ml-2 text-xl font-semibold text-gray-900">
-                Aim90
-              </span>
-            </Link>
-            <div className="flex items-center">
-              {!loading && (
-                <Link href={isLoggedIn ? "/dashboard" : "/sign-in"}>
-                  <Button className="h-9 px-6 text-base">
-                    {isLoggedIn ? "Dashboard" : "Sign In"}
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-      <div className="max-w-5xl mx-auto border-t border-gray-200" />
+      <Header rightContent={
+        !loading && (
+          <Link href={isLoggedIn ? "/dashboard" : "/sign-in"}>
+            <Button className="h-9 px-6 text-base">
+              {isLoggedIn ? "Dashboard" : "Sign In"}
+            </Button>
+          </Link>
+        )
+      } />
 
       <main>
         {/* Hero Section */}
@@ -222,10 +205,6 @@ const HomePage = () => {
               </blockquote>
 
               <p className="text-base leading-relaxed">
-                Most people fail not because they lack a goal, but because they lose sight of their WHY.
-              </p>
-
-              <p className="text-base leading-relaxed">
                 This is where Alfie, your AI accountability partner, comes in. Through daily check-ins, Alfie helps you develop and maintain that burning desire.
               </p>
             </div>
@@ -252,51 +231,19 @@ const HomePage = () => {
 
         {/* Pricing Section */}
         <section id="pricing" className="py-16">
-          <div className="max-w-5xl mx-auto px-6 text-center mb-14">
+          <div className="max-w-5xl mx-auto px-6 text-center mb-10">
             <Badge variant="outline" className="mb-6 bg-white">Pricing</Badge>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Plan</h2>
           </div>
 
-          <div className="max-w-5xl mx-auto px-6 grid gap-8 sm:grid-cols-1 md:grid-cols-2">
-            {/* Free Plan */}
-            <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Pricing - Free')} onMouseLeave={(e) => handleHover(e, false, 'Pricing - Free')}>
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl mb-2">Free</CardTitle>
-                <p className="text-4xl font-bold mb-4">$0<span className="text-base font-medium">/mo</span></p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <ul className="text-sm text-gray-600 space-y-2">
-                  <li>✔︎ Set your Definite Chief Aim</li>
-                  <li>✔︎ 3 daily critical tasks</li>
-                  <li>✔︎ 90-day progress tracker</li>
-                </ul>
-                <Button className="w-full mt-4 bg-[#4A90E2] hover:bg-[#3a7bc8]">Coming Soon</Button>
-              </CardContent>
-            </Card>
-
-            {/* Pro Plan */}
-            <Card className="border-2 border-[#4A90E2] transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Pricing - Pro')} onMouseLeave={(e) => handleHover(e, false, 'Pricing - Pro')}>
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl mb-2">Pro</CardTitle>
-                <p className="text-4xl font-bold mb-4">$4.99<span className="text-base font-medium">/mo</span></p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <ul className="text-sm text-gray-600 space-y-2">
-                  <li>✔︎ Everything in Free</li>
-                  <li>✔︎ Alfie AI accountability partner</li>
-                  <li>✔︎ Personalized insights</li>
-                </ul>
-                <Button className="w-full mt-4 bg-[#4A90E2] hover:bg-[#3a7bc8]">Coming Soon</Button>
-              </CardContent>
-            </Card>
+          <div className="max-w-5xl mx-auto px-6">
+            <PricingCard isLoggedIn={isLoggedIn} userEmail={userEmail} />
           </div>
         </section>
 
-        <div className="max-w-5xl mx-auto border-t border-gray-200" />
-
-        {/* Supported Platforms Section removed */}
-
     </main>
+
+      <div className="max-w-5xl mx-auto border-t border-gray-200" />
 
       {/* Footer */}
       <footer className="bg-[#FEFEFD] py-8 px-6">
@@ -319,7 +266,10 @@ const HomePage = () => {
             </div>
             
             <div className="flex space-x-6">
-              <Link href="https://docs.google.com/document/d/1qrVu82_HSh9o8As5x60qGw2YrZN5QOyDDwy8qhf-u5Q/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="footer-link">
+              <Link href="https://docs.google.com/document/d/1_tyc6xjePKLSjjDrFP5Cb5D7iqdfbQcl/edit?usp=sharing&ouid=105580698223202217739&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="footer-link">
+                <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Terms of Service</Button>
+              </Link>
+              <Link href="https://docs.google.com/document/d/1idJSO9TVnZKyM49ATBcWKxi9gr0v9fVa/edit?usp=sharing&ouid=105580698223202217739&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="footer-link">
                 <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Privacy</Button>
               </Link>
               <Link href="mailto:contact@aim90.org" target="_blank" rel="noopener noreferrer" className="footer-link">

@@ -53,15 +53,12 @@ export async function POST(request: NextRequest) {
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log('Payment succeeded for invoice:', invoice.id);
         
         // If this is a subscription invoice, update the subscription data
         if (invoice.subscription) {
-          console.log('Retrieving subscription from invoice:', invoice.subscription);
           const subscription = await stripe.subscriptions.retrieve(
             invoice.subscription as string
           );
-          console.log('Full subscription object retrieved:', JSON.stringify(subscription, null, 2));
           await handleSubscriptionChange(subscription);
         }
         break;
@@ -69,7 +66,8 @@ export async function POST(request: NextRequest) {
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log('Payment failed for invoice:', invoice.id);
+        console.error('Payment failed for invoice:', invoice.id);
+        // TODO: Notify user of payment failure
         break;
       }
     }
@@ -89,7 +87,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   const customerId = session.customer as string;
 
   if (!userId) {
-    console.error('No user ID in session metadata');
+    console.error('Webhook: No user ID in session metadata');
     return;
   }
 
@@ -100,7 +98,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     .eq('user_id', userId);
 
   if (error) {
-    console.error('Error updating customer ID:', error);
+    console.error('Webhook: Error updating customer ID:', error);
   }
 }
 
@@ -115,25 +113,17 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     .single();
 
   if (fetchError || !userData) {
-    console.error('User not found for customer:', customerId);
+    console.error('Webhook: User not found for customer:', customerId);
     return;
   }
 
   const priceId = subscription.items.data[0]?.price.id;
   const priceData = subscription.items.data[0]?.price;
-  
-  // Access subscription as any to check for underscore properties
   const subAny = subscription as any;
   
   // Get the billing interval from the price
-  const interval = (priceData as any)?.recurring?.interval; // 'month'
+  const interval = (priceData as any)?.recurring?.interval;
   const intervalCount = (priceData as any)?.recurring?.interval_count || 1;
-  
-  console.log('Price/Interval data:', {
-    priceId,
-    interval,
-    intervalCount,
-  });
   
   // Use billing_cycle_anchor or start_date as the period start
   const periodStartTimestamp = subAny.billing_cycle_anchor || subAny.start_date || subscription.created;
@@ -160,15 +150,6 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     currentPeriodEnd = endDate.toISOString();
   }
 
-  console.log('Converted dates for database:', {
-    customerId,
-    subscriptionId: subscription.id,
-    status: subscription.status,
-    priceId,
-    periodStart: currentPeriodStart,
-    periodEnd: currentPeriodEnd,
-  });
-
   // Update subscription details
   const { error } = await supabaseAdmin
     .from('aim90_table')
@@ -178,13 +159,12 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
       plan_price_id: priceId,
       pro_start_date: currentPeriodStart,
       pro_end_date: currentPeriodEnd,
+      cancel_at_end_date: subscription.cancel_at_period_end,
     })
     .eq('user_id', userData.user_id);
 
   if (error) {
-    console.error('Error updating subscription:', error);
-  } else {
-    console.log('Successfully updated subscription for user:', userData.user_id);
+    console.error('Webhook: Error updating subscription:', error);
   }
 }
 
@@ -198,7 +178,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .single();
 
   if (fetchError || !userData) {
-    console.error('User not found for customer:', customerId);
+    console.error('Webhook: User not found for customer:', customerId);
     return;
   }
 
@@ -211,7 +191,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .eq('user_id', userData.user_id);
 
   if (error) {
-    console.error('Error canceling subscription:', error);
+    console.error('Webhook: Error canceling subscription:', error);
   }
 }
 

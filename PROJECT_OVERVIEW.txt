@@ -5,6 +5,7 @@ The website's main purpose is for users to manage their subscription through Str
 
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SERVICE_ROLE_KEY
 STRIPE_WEBHOOK_SECRET
 STRIPE_SECRET_KEY
 NEXT_STRIPE_PUBLISHABLE_KEY
@@ -40,6 +41,7 @@ subscription_status - text
 plan_price_id - text (Quarterly, Monthly)
 pro_start_date - timestampz 
 pro_end_date - timestampz
+cancel_at_end_date - boolean (default false. False = reoccuring True = User canceled subscription)
 
 Mobile app tech stack:
 Flutter / Dart
