@@ -93,13 +93,11 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  // Upsert user's Stripe customer ID
+  // Update user's record with Stripe customer ID
   const { error } = await supabaseAdmin
     .from('aim90_table')
-    .upsert(
-      { user_id: userId, stripe_customer_id: customerId },
-      { onConflict: 'user_id' }
-    );
+    .update({ stripe_customer_id: customerId })
+    .eq('user_id', userId);
 
   if (error) {
     console.error('Webhook: Error updating customer ID:', error);

@@ -16,12 +16,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure aim90_table row exists for this user
-    await supabase.from('aim90_table').upsert(
-      { user_id: user.id },
-      { onConflict: 'user_id' }
-    );
-
     const { priceId } = await request.json();
 
     // Validate priceId
