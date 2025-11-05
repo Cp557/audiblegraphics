@@ -139,7 +139,9 @@ export default async function DashboardPage({
               <Link href="https://docs.google.com/document/d/1idJSO9TVnZKyM49ATBcWKxi9gr0v9fVa/edit?usp=sharing&ouid=105580698223202217739&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="footer-link">
                 <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Privacy</Button>
               </Link>
-              <span className="text-xs text-gray-500">contact@aim90.org</span>
+              <span className="inline-flex items-center justify-center h-9 px-4 py-2 rounded-md text-xs font-medium text-gray-500 cursor-default select-text">
+                contact@aim90.org
+              </span>
             </div>
           </div>
 

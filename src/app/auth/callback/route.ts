@@ -11,6 +11,15 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
+      // Ensure aim90_table row exists
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.id) {
+        await supabase.from('aim90_table').upsert(
+          { user_id: user.id },
+          { onConflict: 'user_id' }
+        )
+      }
+
       const forwardedHost = request.headers.get('x-forwarded-host')
       const isLocalEnv = process.env.NODE_ENV === 'development'
       
