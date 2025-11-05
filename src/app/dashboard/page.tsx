@@ -139,9 +139,7 @@ export default async function DashboardPage({
               <Link href="https://docs.google.com/document/d/1idJSO9TVnZKyM49ATBcWKxi9gr0v9fVa/edit?usp=sharing&ouid=105580698223202217739&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="footer-link">
                 <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Privacy</Button>
               </Link>
-              <Button asChild variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">
-                <a href="mailto:contact@aim90.org" className="footer-link">Contact</a>
-              </Button>
+              <span className="text-xs text-gray-500">contact@aim90.org</span>
             </div>
           </div>
 
