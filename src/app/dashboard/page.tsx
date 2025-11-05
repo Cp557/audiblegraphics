@@ -29,7 +29,7 @@ export default async function DashboardPage({
   // Fetch user's subscription status from aim90_table
   const { data: userData } = await supabase
     .from('aim90_table')
-    .select('stripe_customer_id, subscription_status, plan_price_id, pro_end_date, cancel_at_end_date')
+    .select('stripe_customer_id, plan_price_id, pro_end_date, cancel_at_period_end')
     .eq('user_id', user.id)
     .single();
 
@@ -83,9 +83,8 @@ export default async function DashboardPage({
               <div className="mt-30">
                 <h2 className="text-2xl font-bold text-center mb-8">Manage Your Subscription</h2>
                 <ManageSubscriptionButton 
-                  subscriptionStatus={userData?.subscription_status}
                   planPriceId={userData?.plan_price_id}
-                  cancelAtEndDate={userData?.cancel_at_end_date}
+                  cancelAtPeriodEnd={userData?.cancel_at_period_end}
                   proEndDate={userData?.pro_end_date}
                 />
               </div>

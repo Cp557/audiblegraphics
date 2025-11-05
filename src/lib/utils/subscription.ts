@@ -1,16 +1,15 @@
 export interface SubscriptionData {
-  subscription_status?: string | null;
   pro_end_date?: string | null;
-  cancel_at_end_date?: boolean | null;
+  cancel_at_period_end?: boolean | null;
   plan_price_id?: string | null;
 }
 
 /**
  * Checks if user has an active subscription
- * Validates both subscription status and expiration date
+ * Validates subscription based on expiration date
  */
 export function hasActiveSubscription(userData?: SubscriptionData | null): boolean {
-  if (!userData || userData.subscription_status !== 'active') {
+  if (!userData) {
     return false;
   }
   
@@ -31,7 +30,7 @@ export function getSubscriptionWarning(userData?: SubscriptionData | null): stri
     return null;
   }
   
-  if (userData.cancel_at_end_date && userData.pro_end_date) {
+  if (userData.cancel_at_period_end && userData.pro_end_date) {
     const endDate = new Date(userData.pro_end_date);
     const formattedDate = endDate.toLocaleDateString('en-US', {
       month: 'long',

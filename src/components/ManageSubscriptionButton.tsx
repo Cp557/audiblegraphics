@@ -7,16 +7,14 @@ import { Button } from '@/components/ui/button';
 import { getPlanDisplayName } from '@/lib/utils/subscription';
 
 interface ManageSubscriptionButtonProps {
-  subscriptionStatus?: string;
   planPriceId?: string;
-  cancelAtEndDate?: boolean;
+  cancelAtPeriodEnd?: boolean;
   proEndDate?: string;
 }
 
 export default function ManageSubscriptionButton({ 
-  subscriptionStatus: _subscriptionStatus, 
   planPriceId,
-  cancelAtEndDate,
+  cancelAtPeriodEnd,
   proEndDate
 }: ManageSubscriptionButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -56,7 +54,7 @@ export default function ManageSubscriptionButton({
           <p className="text-sm text-gray-700">{getPlanDisplayName(planPriceId)}</p>
           {proEndDate && (
             <p className="text-sm text-gray-700">
-              {cancelAtEndDate ? 'Ends on ' : 'Renews on '}
+              {cancelAtPeriodEnd ? 'Ends on ' : 'Renews on '}
               {new Date(proEndDate as string).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })}
             </p>
           )}

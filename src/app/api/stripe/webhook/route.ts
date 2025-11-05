@@ -117,49 +117,29 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     return;
   }
 
-  const priceId = subscription.items.data[0]?.price.id;
-  const priceData = subscription.items.data[0]?.price;
-  const subAny = subscription as any;
+  const item = subscription.items.data[0];
+  const priceId = item?.price.id;
+  const itemAny = item as any;
   
-  // Get the billing interval from the price
-  const interval = (priceData as any)?.recurring?.interval;
-  const intervalCount = (priceData as any)?.recurring?.interval_count || 1;
-  
-  // Use billing_cycle_anchor or start_date as the period start
-  const periodStartTimestamp = subAny.billing_cycle_anchor || subAny.start_date || subscription.created;
-  const currentPeriodStart = periodStartTimestamp 
-    ? new Date(periodStartTimestamp * 1000).toISOString()
+  // Use current_period_start and current_period_end from the subscription item
+  // These are automatically updated by Stripe on renewals
+  const currentPeriodStart = itemAny.current_period_start
+    ? new Date(itemAny.current_period_start * 1000).toISOString()
     : null;
   
-  // Calculate period end based on interval
-  let currentPeriodEnd = null;
-  if (periodStartTimestamp && interval) {
-    const startDate = new Date(periodStartTimestamp * 1000);
-    const endDate = new Date(startDate);
-    
-    if (interval === 'month') {
-      endDate.setMonth(endDate.getMonth() + intervalCount);
-    } else if (interval === 'year') {
-      endDate.setFullYear(endDate.getFullYear() + intervalCount);
-    } else if (interval === 'week') {
-      endDate.setDate(endDate.getDate() + (7 * intervalCount));
-    } else if (interval === 'day') {
-      endDate.setDate(endDate.getDate() + intervalCount);
-    }
-    
-    currentPeriodEnd = endDate.toISOString();
-  }
+  const currentPeriodEnd = itemAny.current_period_end
+    ? new Date(itemAny.current_period_end * 1000).toISOString()
+    : null;
 
   // Update subscription details
   const { error } = await supabaseAdmin
     .from('aim90_table')
     .update({
       stripe_subscription_id: subscription.id,
-      subscription_status: subscription.status,
       plan_price_id: priceId,
       pro_start_date: currentPeriodStart,
       pro_end_date: currentPeriodEnd,
-      cancel_at_end_date: subscription.cancel_at_period_end,
+      cancel_at_period_end: subscription.cancel_at_period_end,
     })
     .eq('user_id', userData.user_id);
 
@@ -182,17 +162,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     return;
   }
 
-  // Update subscription status to canceled
-  const { error } = await supabaseAdmin
-    .from('aim90_table')
-    .update({
-      subscription_status: 'canceled',
-    })
-    .eq('user_id', userData.user_id);
-
-  if (error) {
-    console.error('Webhook: Error canceling subscription:', error);
-  }
+  // Note: Subscription deletion is tracked by pro_end_date being in the past
+  // No additional status field needed
+  console.log('Webhook: Subscription deleted for user:', userData.user_id);
 }
 
 

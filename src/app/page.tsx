@@ -150,7 +150,7 @@ const HomePage = () => {
             
             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3">
               <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Benefits - Proven Framework')} onMouseLeave={(e) => handleHover(e, false, 'Benefits - Proven Framework')}>
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-1">
                   <CardTitle className="text-lg">Proven Framework</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -161,7 +161,7 @@ const HomePage = () => {
               </Card>
 
               <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Benefits - AI Accountability Partner')} onMouseLeave={(e) => handleHover(e, false, 'Benefits - AI Accountability Partner')}>
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-1">
                   <CardTitle className="text-lg">AI Accountability Partner</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -172,7 +172,7 @@ const HomePage = () => {
               </Card>
 
               <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Benefits - Focus on What Matters')} onMouseLeave={(e) => handleHover(e, false, 'Benefits - Focus on What Matters')}>
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-1">
                   <CardTitle className="text-lg">Focus on What Matters</CardTitle>
                 </CardHeader>
                 <CardContent>
