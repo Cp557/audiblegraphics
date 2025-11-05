@@ -1,3 +1,6 @@
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/server';
 import { createClient } from '@supabase/supabase-js';
@@ -55,10 +58,9 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         
         // If this is a subscription invoice, update the subscription data
-        if (invoice.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(
-            invoice.subscription as string
-          );
+        const subscriptionId = (invoice as any).subscription as string | undefined;
+        if (subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           await handleSubscriptionChange(subscription);
         }
         break;
