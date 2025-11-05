@@ -54,11 +54,17 @@ export default function SignInPage() {
         return;
       }
 
+      const redirectBase = process.env.NEXT_PUBLIC_DOMAIN
+        ? process.env.NEXT_PUBLIC_DOMAIN
+        : (process.env.NODE_ENV === 'production'
+            ? 'https://www.aim90.org'
+            : window.location.origin);
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${redirectBase}/auth/callback`,
         },
       });
 
