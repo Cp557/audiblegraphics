@@ -1,7 +1,6 @@
 export interface SubscriptionData {
   pro_end_date?: string | null;
   cancel_at_period_end?: boolean | null;
-  plan_price_id?: string | null;
 }
 
 /**
@@ -44,26 +43,16 @@ export function getSubscriptionWarning(userData?: SubscriptionData | null): stri
 }
 
 /**
- * Gets the plan name from price ID
+ * Gets the plan name
  */
-export function getPlanName(planPriceId?: string | null): string {
-  if (planPriceId === process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID) {
-    return 'Monthly';
-  } else if (planPriceId === process.env.NEXT_PUBLIC_STRIPE_QUARTERLY_PRICE_ID) {
-    return 'Quarterly';
-  }
-  return 'Pro';
+export function getPlanName(): string {
+  return 'Monthly';
 }
 
 /**
  * Gets formatted plan display with price
  */
-export function getPlanDisplayName(planPriceId?: string | null): string {
-  if (planPriceId === process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID) {
-    return 'Monthly ($11.99/mo)';
-  } else if (planPriceId === process.env.NEXT_PUBLIC_STRIPE_QUARTERLY_PRICE_ID) {
-    return 'Quarterly ($29.99/3mo)';
-  }
-  return 'Pro';
+export function getPlanDisplayName(): string {
+  return 'Monthly ($11.99/mo)';
 }
 

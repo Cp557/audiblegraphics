@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aim90",
-  description: "A mobile app inspired by Think and Grow Rich. Define your chief aim, complete daily tasks, and stay accountable with Alfie, your AI accountability partner.",
+  title: "Audible Slides",
+  description: "AudibleSlides is a website that generates narrated slideshows for educational purposes.",
   icons: {
     icon: '/logo.svg',
   },

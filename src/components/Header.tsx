@@ -18,14 +18,14 @@ export default function Header({ rightContent }: HeaderProps) {
               <div className="h-10 w-10 relative">
                 <Image 
                   src={logo} 
-                  alt="Aim90 Logo" 
+                  alt="AudibleSlides Logo" 
                   fill
                   style={{ objectFit: 'contain' }}
                   priority
                 />
               </div>
               <span className="ml-2 text-xl font-semibold text-gray-900">
-                Aim90
+                AudibleSlides
               </span>
             </Link>
             <div className="flex items-center">

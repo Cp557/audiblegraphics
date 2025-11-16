@@ -1,10 +1,10 @@
-# Aim90.org
+# AudibleSlides.com
 
-The official website for **Aim90** - A 90-day goal achievement mobile app inspired by "Think and Grow Rich" by Napoleon Hill.
+The official website for **AudibleSlides** - A website that generates narrated slideshows for educational purposes.
 
-## About Aim90
+## About AudibleSlides
 
-Aim90 helps users achieve their most important goals through:
+AudibleSlides helps users create educational content through:
 - Setting a Definite Chief Aim (DCA)
 - Completing 3 daily critical tasks
 - AI accountability partner "Alfie" for check-ins (paid feature)

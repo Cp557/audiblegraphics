@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Get customer's Stripe ID from database
     const { data: userData } = await supabase
-      .from('aim90_table')
+      .from('main_table')
       .select('stripe_customer_id')
       .eq('user_id', user.id)
       .single();

@@ -95,7 +95,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
   // Update user's record with Stripe customer ID
   const { error } = await supabaseAdmin
-    .from('aim90_table')
+    .from('main_table')
     .update({ stripe_customer_id: customerId })
     .eq('user_id', userId);
 
@@ -109,7 +109,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   
   // Find user by Stripe customer ID
   const { data: userData, error: fetchError } = await supabaseAdmin
-    .from('aim90_table')
+    .from('main_table')
     .select('user_id')
     .eq('stripe_customer_id', customerId)
     .single();
@@ -120,7 +120,6 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   }
 
   const item = subscription.items.data[0];
-  const priceId = item?.price.id;
   const itemAny = item as any;
   
   // Use current_period_start and current_period_end from the subscription item
@@ -135,10 +134,9 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 
   // Update subscription details
   const { error } = await supabaseAdmin
-    .from('aim90_table')
+    .from('main_table')
     .update({
       stripe_subscription_id: subscription.id,
-      plan_price_id: priceId,
       pro_start_date: currentPeriodStart,
       pro_end_date: currentPeriodEnd,
       cancel_at_period_end: subscription.cancel_at_period_end,
@@ -154,7 +152,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
 
   const { data: userData, error: fetchError } = await supabaseAdmin
-    .from('aim90_table')
+    .from('main_table')
     .select('user_id')
     .eq('stripe_customer_id', customerId)
     .single();

@@ -59,7 +59,7 @@ export default function SignInPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${siteUrl}/auth/mobile-redirect`,
+          emailRedirectTo: `${siteUrl}/auth/callback`,
         },
       });
 

@@ -16,22 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { priceId } = await request.json();
-
-    // Validate priceId
-    const validPriceIds = [
-      process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID,
-      process.env.NEXT_PUBLIC_STRIPE_QUARTERLY_PRICE_ID,
-    ];
-
-    if (!priceId || !validPriceIds.includes(priceId)) {
-      return NextResponse.json(
-        { error: 'Invalid price ID' },
-        { status: 400 }
-      );
-    }
-
-    // Create Checkout Session
+    // Create Checkout Session with monthly price
     const session = await stripe.checkout.sessions.create({
       customer_email: user.email,
       client_reference_id: user.id,
@@ -39,7 +24,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: priceId,
+          price: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID!,
           quantity: 1,
         },
       ],

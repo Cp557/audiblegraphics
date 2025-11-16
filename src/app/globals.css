@@ -45,18 +45,18 @@
 
 :root {
   --radius: 0.625rem;
-  
-  /* Aim90 Brand Colors */
-  --aim90-primary: #4A90E2;
-  --aim90-background: #F5F5F5;
-  --aim90-text: #1A1A1A;
-  --aim90-surface: #FFFFFF;
-  --aim90-text-secondary: #666666;
-  --aim90-logo: #fb5d5a;
-  --aim90-progress-green: #D1FAE5;
-  
-  /* Theme Colors using Aim90 palette */
-  --background: oklch(0.97 0 0); /* #F5F5F5 */
+
+  /* AudibleSlides Brand Colors */
+  --audibleslides-primary: #4A90E2;
+  --audibleslides-background: #F5F5F5;
+  --audibleslides-text: #1A1A1A;
+  --audibleslides-surface: #FFFFFF;
+  --audibleslides-text-secondary: #666666;
+  --audibleslides-logo: #fb5d5a;
+  --audibleslides-progress-green: #D1FAE5;
+
+  /* Theme Colors using AudibleSlides palette */
+  --background: oklch(0.985 0 0); /* lighter gray */
   --foreground: oklch(0.11 0 0); /* #1A1A1A */
   --card: oklch(1 0 0); /* #FFFFFF */
   --card-foreground: oklch(0.11 0 0); /* #1A1A1A */
@@ -155,7 +155,7 @@ header a button {
     @apply border-border outline-ring/50;
   }
   html {
-    overflow-y: scroll;
+    overflow-y: auto;
   }
   body {
     @apply bg-background text-foreground;

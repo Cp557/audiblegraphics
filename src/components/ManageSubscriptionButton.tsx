@@ -7,13 +7,11 @@ import { Button } from '@/components/ui/button';
 import { getPlanDisplayName } from '@/lib/utils/subscription';
 
 interface ManageSubscriptionButtonProps {
-  planPriceId?: string;
   cancelAtPeriodEnd?: boolean;
   proEndDate?: string;
 }
 
 export default function ManageSubscriptionButton({ 
-  planPriceId,
   cancelAtPeriodEnd,
   proEndDate
 }: ManageSubscriptionButtonProps) {
@@ -47,11 +45,11 @@ export default function ManageSubscriptionButton({
     <div className="max-w-sm mx-auto -mt-4">
       <Card className="border-2 border-gray-200">
         <CardHeader className="flex items-center justify-center p-0 gap-0">
-          <Badge> Aim90 Pro </Badge>
+          <Badge> AudibleSlides Pro </Badge>
         </CardHeader>
         <CardContent className="space-y-3 pt-0 text-center">
           {/* Key details */}
-          <p className="text-sm text-gray-700">{getPlanDisplayName(planPriceId)}</p>
+          <p className="text-sm text-gray-700">{getPlanDisplayName()}</p>
           {proEndDate && (
             <p className="text-sm text-gray-700">
               {cancelAtPeriodEnd ? 'Ends on ' : 'Renews on '}
