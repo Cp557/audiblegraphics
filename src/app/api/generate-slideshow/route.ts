@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
         createSlide({
           presentation_id: presentation.id,
           order_index: index,
-          markdown_content: slideData.slide_content,
+          slide_title: slideData.slide_title,
+          slide_content: slideData.slide_content,
           speaker_notes: slideData.speaker_notes,
           image_prompt: slideData.image_prompt,
           image_url: slideData.image_url,
@@ -129,8 +130,8 @@ export async function POST(request: NextRequest) {
         created_at: presentation.created_at,
         slides: slidesWithUrls.map((slide, index) => ({
           order_index: index,
-          title: slide.title,
-          markdown_content: slide.slide_content,
+          slide_title: slide.slide_title,
+          slide_content: slide.slide_content,
           speaker_notes: slide.speaker_notes,
           image_prompt: slide.image_prompt,
           image_url: slide.image_url,

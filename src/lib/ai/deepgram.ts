@@ -40,7 +40,7 @@ export async function generateAudio(
 
   // Configure speech options
   const speakOptions = {
-    model: options.model || 'aura-2-thalia-en',
+    model: options.model || 'aura-2-odysseus-en',
     encoding: (options.encoding || 'linear16') as 'linear16',
     container: 'wav' as const,
     sample_rate: options.sampleRate || 24000,

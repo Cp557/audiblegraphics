@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Search, SquarePlus } from "lucide-react"
+import { usePathname } from "next/navigation"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -31,7 +32,6 @@ const data = {
       title: "New Slideshow",
       url: "/dashboard",
       icon: SquarePlus,
-      isActive: true,
     },
     {
       title: "Search Slideshows",
@@ -51,6 +51,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 }
 
 export function AppSidebar({ user, presentations = [], ...props }: AppSidebarProps) {
+  const pathname = usePathname()
   const resolvedUser = {
     ...data.defaultUser,
     ...user,
@@ -58,8 +59,14 @@ export function AppSidebar({ user, presentations = [], ...props }: AppSidebarPro
 
   // Map presentations to project format
   const projects = presentations.map((presentation) => ({
+    id: presentation.id,
     name: presentation.title,
     url: `/dashboard/${presentation.id}`,
+  }))
+
+  const navItems = data.navMain.map((item) => ({
+    ...item,
+    isActive: pathname === item.url,
   }))
 
   return (
@@ -68,7 +75,7 @@ export function AppSidebar({ user, presentations = [], ...props }: AppSidebarPro
         <TeamSwitcher logoSrc={data.brand.logoSrc} title={data.brand.title} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
         <NavProjects projects={projects} />
       </SidebarContent>
       <SidebarFooter>

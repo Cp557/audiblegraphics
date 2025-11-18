@@ -11,6 +11,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Turbopack config (empty to acknowledge we're using Turbopack)
+  turbopack: {},
+  // Ensure server components don't bundle these packages
+  serverExternalPackages: [
+    '@ffmpeg-installer/win32-x64',
+    '@ffprobe-installer/win32-x64',
+    'fluent-ffmpeg',
+    'sharp',
+  ],
 };
 
 export default nextConfig;

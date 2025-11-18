@@ -23,11 +23,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { SettingsSheet } from "@/components/SettingsSheet"
 
 export function NavUser({
   user,
@@ -40,6 +51,9 @@ export function NavUser({
 }) {
   const [isUpgrading, setIsUpgrading] = React.useState(false)
   const [isSigningOut, setIsSigningOut] = React.useState(false)
+  const [showSignOutDialog, setShowSignOutDialog] = React.useState(false)
+  const [showSettingsSheet, setShowSettingsSheet] = React.useState(false)
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false)
   const { isMobile } = useSidebar()
 
   const handleUpgrade = React.useCallback(async () => {
@@ -71,12 +85,23 @@ export function NavUser({
     }
   }, [isUpgrading])
 
-  const handleSignOut = React.useCallback(async () => {
+  const handleSettingsClick = React.useCallback(() => {
+    setShowSettingsSheet(true)
+    setIsMenuOpen(false)
+  }, [])
+
+  const handleSignOutClick = React.useCallback(() => {
+    setShowSignOutDialog(true)
+    setIsMenuOpen(false)
+  }, [])
+
+  const handleConfirmSignOut = React.useCallback(async () => {
     if (isSigningOut) {
       return
     }
 
     setIsSigningOut(true)
+    setShowSignOutDialog(false)
     try {
       const response = await fetch("/api/auth/signout", {
         method: "POST",
@@ -100,7 +125,7 @@ export function NavUser({
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
+        <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
@@ -150,7 +175,13 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault()
+                  handleSettingsClick()
+                }}
+                className="cursor-pointer"
+              >
                 <Settings />
                 Settings
               </DropdownMenuItem>
@@ -159,7 +190,7 @@ export function NavUser({
             <DropdownMenuItem
               onSelect={(event) => {
                 event.preventDefault()
-                handleSignOut()
+                handleSignOutClick()
               }}
               disabled={isSigningOut}
               className="cursor-pointer"
@@ -169,6 +200,30 @@ export function NavUser({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        
+        <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You will be redirected to the home page.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowSignOutDialog(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmSignOut} disabled={isSigningOut}>
+                {isSigningOut ? "Signing out..." : "Sign out"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <SettingsSheet
+          open={showSettingsSheet}
+          onOpenChange={setShowSettingsSheet}
+        />
       </SidebarMenuItem>
     </SidebarMenu>
   )

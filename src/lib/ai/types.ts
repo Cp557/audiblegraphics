@@ -6,6 +6,7 @@
  * Represents a single slide with content, speaker notes, and image prompt
  */
 export interface SlideData {
+  slide_title: string;
   slide_content: string;
   speaker_notes: string;
   image_prompt: string;
@@ -24,7 +25,6 @@ export interface GenerationResult {
  * Enhanced slide data with storage URLs
  */
 export interface SlideWithUrls extends SlideData {
-  title: string;
   image_url: string;
   audio_url: string;
 }

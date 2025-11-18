@@ -22,7 +22,8 @@ export interface Slide {
   id: string;
   presentation_id: string;
   order_index: number;
-  markdown_content: string;
+  slide_title: string;
+  slide_content: string;
   speaker_notes: string;
   image_prompt: string;
   image_url: string;
@@ -33,7 +34,8 @@ export interface Slide {
 export interface SlideInput {
   presentation_id: string;
   order_index: number;
-  markdown_content: string;
+  slide_title: string;
+  slide_content: string;
   speaker_notes: string;
   image_prompt: string;
   image_url: string;
@@ -193,4 +195,18 @@ export async function updatePresentation(
   }
 
   return data;
+}
+
+/**
+ * Update a presentation's title
+ * @param presentationId - Presentation ID
+ * @param userId - User ID
+ * @param title - New title
+ */
+export async function updatePresentationTitle(
+  presentationId: string,
+  userId: string,
+  title: string
+): Promise<Presentation> {
+  return updatePresentation(presentationId, userId, { title });
 }

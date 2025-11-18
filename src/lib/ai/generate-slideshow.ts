@@ -67,11 +67,7 @@ export async function generateSlideshowWithAudio(
     const narration = slide.speaker_notes;
     const imagePrompt = slide.image_prompt;
 
-    // Extract title for logging
-    const titleMatch = slide.slide_content.match(/##\s+(.+?)\n/);
-    const title = titleMatch ? titleMatch[1] : `Slide ${index + 1}`;
-
-    console.log(`\n[Slide ${index + 1}] ${title}`);
+    console.log(`\n[Slide ${index + 1}] ${slide.slide_title}`);
     console.log(`Speaker Notes: ${narration ? narration.substring(0, 50) + '...' : 'None'}`);
     console.log(`Image Prompt: ${imagePrompt ? imagePrompt.substring(0, 50) + '...' : 'None'}`);
 
@@ -88,7 +84,6 @@ export async function generateSlideshowWithAudio(
 
     return {
       ...slide,
-      title,
       audioPath,
       imagePath: imageResult ? imagePath : null,
     };
@@ -114,10 +109,10 @@ export async function generateSlideshowWithAudio(
       console.log(`✓ Uploaded slide ${index + 1} to Supabase`);
 
       return {
+        slide_title: slideData.slide_title,
         slide_content: slideData.slide_content,
         speaker_notes: slideData.speaker_notes,
         image_prompt: slideData.image_prompt,
-        title: slideData.title,
         image_url: imageUpload?.url || '',
         audio_url: audioUpload.url,
       };
@@ -143,10 +138,10 @@ export async function generateSlideshowWithAudio(
     console.log('=======================================\n');
 
     return generatedSlides.map((slide) => ({
+      slide_title: slide.slide_title,
       slide_content: slide.slide_content,
       speaker_notes: slide.speaker_notes,
       image_prompt: slide.image_prompt,
-      title: slide.title,
       image_url: slide.imagePath || '',
       audio_url: slide.audioPath,
     }));

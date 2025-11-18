@@ -93,7 +93,7 @@ export async function generateSlideshowMarkdown(topic: string): Promise<SlideDat
   const client = createGeminiClient();
 
   const systemPrompt = `<role>
-You are SlideGen, an AI that creates fun and engaging narrated slide decks with visual elements about various topics.
+You are SlideGen, an AI that creates fun and engaging narrated slide decks with visual elements about various topics & questions.
 </role>
 <instructions>
 Create a presentation about '${topic}'.
@@ -102,38 +102,43 @@ Include:
 - 3 content slides with bullet points
 - A conclusion slide with bullet points summarizing the key points and insights.
 For each slide provide:
-1. Each title should be a single concise and coherent phrase accompanied by exactly one relevant emoji. (Do NOT use the colon ":" format for titles)
-2. 3-4 concise bullet points, you will go into more detail in the speaker notes.
-3. Clear prose speaker notes suitable for narration that is accessible to general audiences
+1. Each title should be a single concise and coherent phrase (Do NOT use the colon ":" format for titles)
+2. 3 bullet points that are brief and concise, they should not be complete sentences (You will go into more detail in the speaker notes.) each starting with "- " and separated by newlines (\\n).
+3. Clear prose speaker notes suitable for narration that is accessible to general audiences and aligns with the bullet points.
 4. A detailed and specific image prompt for an AI image generator that is relevent to the slide's content. Do not include any text in the image.
 Respond with a JSON array where each element represents a slide in the following format:
 \`\`\`json
 [
   {
-    "slide_content": "## Introduction Slide Title\\n\\n",
+    "slide_title": "Introduction Slide Title",
+    "slide_content": "- First bullet point\\n- Second bullet point\\n- Third bullet point",
     "speaker_notes": "Speaker notes",
     "image_prompt": "Image prompt"
   },
   {
-    "slide_content": "## Content Slide Title\\n\\n",
+    "slide_title": "Content Slide Title",
+    "slide_content": "- First bullet point\\n- Second bullet point\\n- Third bullet point",
     "speaker_notes": "Speaker notes",
     "image_prompt": "Image prompt"
   },
   {
-    "slide_content": "## Content Slide Title\\n\\n",
+    "slide_title": "Content Slide Title",
+    "slide_content": "- First bullet point\\n- Second bullet point\\n- Third bullet point",
     "speaker_notes": "Speaker notes",
     "image_prompt": "Image prompt"
   },
   {
-    "slide_content": "## Content Slide Title\\n\\n",
+    "slide_title": "Content Slide Title",
+    "slide_content": "- First bullet point\\n- Second bullet point\\n- Third bullet point",
     "speaker_notes": "Speaker notes",
     "image_prompt": "Image prompt"
   },
   {
-    "slide_content": "## Conclusion Slide Title\\n\\n",
+    "slide_title": "Conclusion Slide Title",
+    "slide_content": "- First bullet point\\n- Second bullet point\\n- Third bullet point",
     "speaker_notes": "Speaker notes",
     "image_prompt": "Image prompt"
-  },
+  }
 ]
 </instructions>`.trim();
 
@@ -192,12 +197,14 @@ function parseSlideJSON(responseText: string): SlideData[] {
 function fallbackParse(text: string): SlideData[] {
   const slides: SlideData[] = [];
 
-  // Try to extract slide content and speaker notes using regex
+  // Try to extract slide data using regex
+  const titleMatches = Array.from(text.matchAll(/"slide_title"\s*:\s*"([^"]+)"/g));
   const contentMatches = Array.from(text.matchAll(/"slide_content"\s*:\s*"([^"]+)"/g));
   const notesMatches = Array.from(text.matchAll(/"speaker_notes"\s*:\s*"([^"]+)"/g));
   const imageMatches = Array.from(text.matchAll(/"image_prompt"\s*:\s*"([^"]+)"/g));
 
   const minLength = Math.min(
+    titleMatches.length,
     contentMatches.length,
     notesMatches.length,
     imageMatches.length
@@ -205,6 +212,7 @@ function fallbackParse(text: string): SlideData[] {
 
   for (let i = 0; i < minLength; i++) {
     slides.push({
+      slide_title: titleMatches[i][1],
       slide_content: contentMatches[i][1].replace(/\\n/g, '\n'),
       speaker_notes: notesMatches[i][1],
       image_prompt: imageMatches[i][1],
@@ -219,8 +227,7 @@ function fallbackParse(text: string): SlideData[] {
 }
 
 /**
- * Generate an image using gemini-2.5-flash-image model
- * Based on the streaming pattern from gemini_example.js
+ * Generate an image using gemini-2.5-flash-image model (nanobanana)
  */
 export async function generateImage(
   prompt: string,
@@ -229,14 +236,16 @@ export async function generateImage(
 ): Promise<string> {
   const client = createGeminiClient();
 
-  // Append instruction to avoid text in images
+
   const enhancedPrompt = `${prompt.trim()} Do not include any text in the image.`;
 
   try {
     const config = {
+      temperature: 0.8,
       responseModalities: ['IMAGE'],
       imageConfig: {
-        imageSize: options.imageSize || '1K',
+        aspectRatio: '16:9',
+        imageSize: options.imageSize || '512x288',
       },
     };
 
