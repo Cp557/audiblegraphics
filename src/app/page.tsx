@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { createClient } from '@/lib/supabase/client';
 import Header from "@/components/Header";
-import PricingCard from "@/components/PricingCard";
+import PricingCards from "@/components/PricingCards";
  
 
 const HomePage = () => {
@@ -182,7 +182,7 @@ const HomePage = () => {
           </div>
 
           <div className="max-w-5xl mx-auto px-6">
-            <PricingCard isLoggedIn={isLoggedIn} userEmail={userEmail} />
+            <PricingCards isLoggedIn={isLoggedIn} userEmail={userEmail} />
           </div>
         </section>
 

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, SquarePlus } from "lucide-react"
+import { SquarePlus } from "lucide-react"
 import { usePathname } from "next/navigation"
 
 import { NavMain } from "@/components/nav-main"
@@ -32,11 +32,6 @@ const data = {
       title: "New Slideshow",
       url: "/dashboard",
       icon: SquarePlus,
-    },
-    {
-      title: "Search Slideshows",
-      url: "#",
-      icon: Search,
     },
   ],
 }

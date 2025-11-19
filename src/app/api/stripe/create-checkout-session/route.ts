@@ -16,7 +16,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Checkout Session with monthly price
+    // Get priceId from request body, fallback to monthly price if not provided
+    const body = await request.json();
+    const { priceId } = body;
+    const finalPriceId = priceId || process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID!;
+
+    if (!finalPriceId) {
+      return NextResponse.json(
+        { error: 'Price ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Create Checkout Session with the specified price
     const session = await stripe.checkout.sessions.create({
       customer_email: user.email,
       client_reference_id: user.id,
@@ -24,7 +36,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID!,
+          price: finalPriceId,
           quantity: 1,
         },
       ],

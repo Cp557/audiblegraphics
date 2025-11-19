@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 
 import {
   SidebarMenu,
@@ -18,22 +19,25 @@ export function TeamSwitcher({ logoSrc, title }: TeamSwitcherProps) {
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton
+          asChild
           size="lg"
-          className="pointer-events-none gap-3 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="gap-3 focus-visible:ring-0 focus-visible:ring-offset-0"
         >
-          <span className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-            <Image
-              src={logoSrc}
-              alt={`${title} logo`}
-              width={24}
-              height={24}
-              className="size-6"
-              priority
-            />
-          </span>
-          <span className="truncate text-left text-base font-semibold leading-tight">
-            {title}
-          </span>
+          <Link href="/" aria-label={`${title} home`}>
+            <span className="flex aspect-square size-10 items-center justify-center transition-all group-data-[collapsible=icon]:size-8">
+              <Image
+                src={logoSrc}
+                alt={`${title} logo`}
+                width={24}
+                height={24}
+                className="size-8 transition-all group-data-[collapsible=icon]:size-6"
+                priority
+              />
+            </span>
+            <span className="truncate text-left text-base font-semibold leading-tight">
+              {title}
+            </span>
+          </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>

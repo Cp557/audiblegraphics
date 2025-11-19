@@ -93,14 +93,16 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  // Update user's record with Stripe customer ID
+  // Upsert user's record with Stripe customer ID (creates row if doesn't exist)
   const { error } = await supabaseAdmin
     .from('main_table')
-    .update({ stripe_customer_id: customerId })
-    .eq('user_id', userId);
+    .upsert(
+      { user_id: userId, stripe_customer_id: customerId },
+      { onConflict: 'user_id' }
+    );
 
   if (error) {
-    console.error('Webhook: Error updating customer ID:', error);
+    console.error('Webhook: Error upserting customer ID:', error);
   }
 }
 
