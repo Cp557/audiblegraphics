@@ -41,6 +41,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
     name: string
     email: string
     avatar?: string
+    subscription_tier?: "Pro" | "Ultra" | null
   }
   presentations?: Presentation[]
 }

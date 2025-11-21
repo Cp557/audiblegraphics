@@ -11,6 +11,7 @@ NEXT_PUBLIC_STRIPE_PRO_PRICE_ID
 NEXT_PUBLIC_STRIPE_ULTRA_PRICE_ID
 DEEPGRAM_API_KEY
 GEMINI_API_KEY
+OPENAI_API_KEY
 
 Authentication
 Supabase Email Auth with Row Level Security (RLS)
@@ -24,6 +25,7 @@ main_table:
 - pro_end_date - timestamptz
 - pro_start_date - timestamptz
 - cancel_at_period_end - boolean (default false)
+- subscription_tier - text (Null, Pro, Ultra)
 
 presentations:
 - id - uuid (primary key, uuid_generate_v4())

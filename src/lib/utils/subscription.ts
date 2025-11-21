@@ -1,6 +1,7 @@
 export interface SubscriptionData {
   pro_end_date?: string | null;
   cancel_at_period_end?: boolean | null;
+  subscription_tier?: 'Pro' | 'Ultra' | null;
 }
 
 /**

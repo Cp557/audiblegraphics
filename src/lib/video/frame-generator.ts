@@ -12,6 +12,7 @@ const MAX_CONTENT_WIDTH = FRAME_WIDTH - PADDING * 2;
 interface SlideFrameOptions {
   slide: Slide;
   imageBuffer?: Buffer;
+  darkMode?: boolean;
 }
 
 /**
@@ -34,7 +35,7 @@ function normalizeSlideContent(content: string): { isBulleted: boolean; lines: s
 /**
  * Creates an SVG with text content (title and bullet points)
  */
-function createTextSVG(title: string, content: string): string {
+function createTextSVG(title: string, content: string, textColor: string = '#ffffff'): string {
   const { isBulleted, lines } = normalizeSlideContent(content);
 
   let yPosition = PADDING + TITLE_FONT_SIZE;
@@ -42,9 +43,9 @@ function createTextSVG(title: string, content: string): string {
   // Build SVG content
   let svgContent = `<svg width="${FRAME_WIDTH}" height="${FRAME_HEIGHT}">
     <style>
-      .title { font-family: 'Arial', sans-serif; font-size: ${TITLE_FONT_SIZE}px; font-weight: bold; fill: #ffffff; }
-      .content { font-family: 'Georgia', serif; font-size: ${CONTENT_FONT_SIZE}px; fill: #ffffff; }
-      .bullet { font-family: 'Georgia', serif; font-size: ${CONTENT_FONT_SIZE}px; fill: #ffffff; }
+      .title { font-family: 'Arial', sans-serif; font-size: ${TITLE_FONT_SIZE}px; font-weight: bold; fill: ${textColor}; }
+      .content { font-family: 'Georgia', serif; font-size: ${CONTENT_FONT_SIZE}px; fill: ${textColor}; }
+      .bullet { font-family: 'Georgia', serif; font-size: ${CONTENT_FONT_SIZE}px; fill: ${textColor}; }
     </style>`;
 
   // Add title (centered)
@@ -105,15 +106,22 @@ async function downloadImage(url: string): Promise<Buffer> {
  * Layout: Title (top) → Bullet Points (middle) → Image (bottom)
  */
 export async function createSlideFrame(options: SlideFrameOptions): Promise<Buffer> {
-  const { slide } = options;
+  const { slide, darkMode = false } = options;
 
-  // Create base frame with dark background
+  // Set colors based on mode
+  const backgroundColor = darkMode
+    ? { r: 51, g: 51, b: 51, alpha: 1 } // Dark Mode: #333333
+    : { r: 255, g: 255, b: 255, alpha: 1 }; // Light Mode: #ffffff (White)
+
+  const textColor = darkMode ? '#ffffff' : '#000000';
+
+  // Create base frame with background
   let frameImage = sharp({
     create: {
       width: FRAME_WIDTH,
       height: FRAME_HEIGHT,
       channels: 4,
-      background: { r: 15, g: 23, b: 42, alpha: 1 }, // Dark blue background
+      background: backgroundColor,
     },
   });
 
@@ -125,7 +133,7 @@ export async function createSlideFrame(options: SlideFrameOptions): Promise<Buff
   const imageY = textHeight + PADDING;
 
   // 1. Add text overlay (title + content)
-  const textSVG = createTextSVG(slide.slide_title, slide.slide_content);
+  const textSVG = createTextSVG(slide.slide_title, slide.slide_content, textColor);
   compositeItems.push({
     input: Buffer.from(textSVG),
     top: 0,
@@ -147,7 +155,7 @@ export async function createSlideFrame(options: SlideFrameOptions): Promise<Buff
       const resizedImage = await sharp(imageBuffer)
         .resize(MAX_CONTENT_WIDTH, imageHeight, {
           fit: 'contain',
-          background: { r: 15, g: 23, b: 42, alpha: 1 },
+          background: backgroundColor,
         })
         .toBuffer();
 

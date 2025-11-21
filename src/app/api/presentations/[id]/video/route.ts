@@ -25,6 +25,15 @@ export async function POST(
     // Get presentation ID from params
     const { id: presentationId } = await params;
 
+    // Get options from request body
+    let darkMode = false;
+    try {
+      const body = await request.json();
+      darkMode = !!body.darkMode;
+    } catch (e) {
+      // Ignore JSON parse errors, default to false
+    }
+
     // Fetch presentation with slides (RLS check included)
     const presentation = await getPresentation(presentationId, user.id);
 
@@ -44,7 +53,7 @@ export async function POST(
     const job = createVideoJob(presentationId, user.id);
 
     // Start video generation in background (fire and forget)
-    startVideoGeneration(job.id, presentation);
+    startVideoGeneration(job.id, presentation, { darkMode });
 
     // Return job ID immediately
     return NextResponse.json(

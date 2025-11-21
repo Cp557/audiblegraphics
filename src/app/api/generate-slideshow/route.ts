@@ -17,6 +17,7 @@ export const maxDuration = 600;
 
 interface GenerateSlideshowRequest {
   topic: string;
+  voice?: string;
 }
 
 /**
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = (await request.json()) as GenerateSlideshowRequest;
-    const { topic } = body;
+    const { topic, voice } = body;
 
     if (!topic || typeof topic !== 'string' || topic.trim() === '') {
       return NextResponse.json(
@@ -55,8 +56,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.DEEPGRAM_API_KEY) {
-      console.error('DEEPGRAM_API_KEY is not configured');
+    if (!process.env.DEEPGRAM_API_KEY && !process.env.INWORLD_API_KEY) {
+      console.error('Neither DEEPGRAM_API_KEY nor INWORLD_API_KEY is configured');
       return NextResponse.json(
         { error: 'Server configuration error: Audio service not available' },
         { status: 500 }
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest) {
         topic,
         userId: user.id,
         presentationId: presentation.id,
+        voice,
       });
 
       // Step 3: Save slides to database

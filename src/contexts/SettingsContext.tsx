@@ -5,8 +5,10 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 interface SettingsContextType {
   autoplayAudio: boolean;
   autoSwitchSlide: boolean;
+  darkMode: boolean;
   setAutoplayAudio: (value: boolean) => void;
   setAutoSwitchSlide: (value: boolean) => void;
+  setDarkMode: (value: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -20,6 +22,7 @@ interface SettingsProviderProps {
 export function SettingsProvider({ children }: SettingsProviderProps) {
   const [autoplayAudio, setAutoplayAudioState] = useState(false);
   const [autoSwitchSlide, setAutoSwitchSlideState] = useState(false);
+  const [darkMode, setDarkModeState] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Load settings from localStorage on mount
@@ -30,6 +33,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
         const settings = JSON.parse(stored);
         setAutoplayAudioState(settings.autoplayAudio ?? false);
         setAutoSwitchSlideState(settings.autoSwitchSlide ?? false);
+        setDarkModeState(settings.darkMode ?? false);
       }
     } catch (error) {
       console.error('Failed to load settings from localStorage:', error);
@@ -45,12 +49,13 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       const settings = {
         autoplayAudio,
         autoSwitchSlide,
+        darkMode,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (error) {
       console.error('Failed to save settings to localStorage:', error);
     }
-  }, [autoplayAudio, autoSwitchSlide, isInitialized]);
+  }, [autoplayAudio, autoSwitchSlide, darkMode, isInitialized]);
 
   const setAutoplayAudio = (value: boolean) => {
     setAutoplayAudioState(value);
@@ -60,11 +65,17 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     setAutoSwitchSlideState(value);
   };
 
+  const setDarkMode = (value: boolean) => {
+    setDarkModeState(value);
+  };
+
   const value = {
     autoplayAudio,
     autoSwitchSlide,
+    darkMode,
     setAutoplayAudio,
     setAutoSwitchSlide,
+    setDarkMode,
   };
 
   return (

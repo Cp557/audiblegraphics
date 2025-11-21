@@ -23,17 +23,16 @@ export function createDeepgramClient() {
  * @param narration - The text to convert to speech
  * @param outputPath - Where to save the audio file
  * @param options - Audio generation options
- * @returns The output path if successful, empty string otherwise
+ * @returns The output path if successful
+ * @throws Error if generation fails
  */
-export async function generateAudio(
+export async function generateDeepgramAudio(
   narration: string,
   outputPath: string,
   options: AudioOptions = {}
 ): Promise<string> {
   if (!narration || narration.trim() === '') {
-    console.log('No narration provided, creating empty WAV file');
-    await createEmptyWav(outputPath);
-    return outputPath;
+    throw new Error('No narration provided');
   }
 
   const deepgram = createDeepgramClient();
@@ -46,35 +45,28 @@ export async function generateAudio(
     sample_rate: options.sampleRate || 24000,
   };
 
-  try {
-    console.log(`Generating TTS with Deepgram for: ${outputPath}`);
+  console.log(`Generating TTS with Deepgram for: ${outputPath}`);
 
-    // Use the Deepgram SDK to convert text to speech
-    const response = await deepgram.speak.request(
-      { text: narration },
-      speakOptions
-    );
+  // Use the Deepgram SDK to convert text to speech
+  const response = await deepgram.speak.request(
+    { text: narration },
+    speakOptions
+  );
 
-    // Get the audio stream
-    const stream = await response.getStream();
-    if (!stream) {
-      throw new Error('No audio stream received from Deepgram');
-    }
-
-    // Collect the audio data from the stream
-    const audioBuffer = await collectStream(stream);
-
-    // Write to file
-    await writeFile(outputPath, audioBuffer);
-
-    console.log(`Successfully generated TTS: ${outputPath}`);
-    return outputPath;
-  } catch (error) {
-    console.error('Error generating TTS with Deepgram:', error);
-    // Create empty WAV as fallback
-    await createEmptyWav(outputPath);
-    return outputPath;
+  // Get the audio stream
+  const stream = await response.getStream();
+  if (!stream) {
+    throw new Error('No audio stream received from Deepgram');
   }
+
+  // Collect the audio data from the stream
+  const audioBuffer = await collectStream(stream);
+
+  // Write to file
+  await writeFile(outputPath, audioBuffer);
+
+  console.log(`Successfully generated TTS: ${outputPath}`);
+  return outputPath;
 }
 
 /**
@@ -113,7 +105,7 @@ async function collectStream(stream: ReadableStream<Uint8Array>): Promise<Buffer
 /**
  * Create an empty WAV file (for slides with no narration)
  */
-async function createEmptyWav(outputPath: string): Promise<void> {
+export async function createEmptyWav(outputPath: string): Promise<void> {
   // Minimal valid WAV file header (44 bytes + 0 bytes of audio data)
   const emptyWav = Buffer.from([
     0x52, 0x49, 0x46, 0x46, // "RIFF"

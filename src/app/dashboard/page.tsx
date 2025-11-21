@@ -34,10 +34,18 @@ export default async function Page() {
     user.email?.split("@")[0] ??
     "User"
 
+  // Fetch user's subscription status
+  const { data: subscriptionData } = await supabase
+    .from("main_table")
+    .select("subscription_tier, pro_end_date")
+    .eq("user_id", user.id)
+    .single()
+
   const sidebarUser = {
     name: displayName,
     email: user.email ?? "No email",
     avatar: (user.user_metadata?.avatar_url as string | undefined) ?? undefined,
+    subscription_tier: subscriptionData?.subscription_tier as "Pro" | "Ultra" | null,
   }
 
   // Fetch user's presentations

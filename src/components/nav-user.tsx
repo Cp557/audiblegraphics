@@ -3,6 +3,7 @@
 import * as React from "react"
 import {
   ChevronsUpDown,
+  CreditCard,
   LogOut,
   Settings,
   Sparkles,
@@ -47,43 +48,46 @@ export function NavUser({
     name: string
     email: string
     avatar: string
+    subscription_tier?: "Pro" | "Ultra" | null
   }
-}) {
-  const [isUpgrading, setIsUpgrading] = React.useState(false)
+  }) {
+  const [isManagingSubscription, setIsManagingSubscription] = React.useState(false)
   const [isSigningOut, setIsSigningOut] = React.useState(false)
   const [showSignOutDialog, setShowSignOutDialog] = React.useState(false)
   const [showSettingsSheet, setShowSettingsSheet] = React.useState(false)
   const [isMenuOpen, setIsMenuOpen] = React.useState(false)
   const { isMobile } = useSidebar()
 
-  const handleUpgrade = React.useCallback(async () => {
-    if (isUpgrading) {
-      return
-    }
-
-    setIsUpgrading(true)
+  const handleManageSubscription = React.useCallback(async () => {
+    if (isManagingSubscription) return
+    
+    setIsManagingSubscription(true)
     try {
-      const response = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
       })
 
       const data = await response.json()
-
-      if (data?.url) {
-        window.location.href = data.url as string
+      
+      if (data.error) {
+        console.error(data.error)
         return
       }
 
-      console.error("Unable to create checkout session:", data?.error)
+      // Redirect to Stripe Customer Portal
+      if (data.url) {
+        window.location.href = data.url
+      }
     } catch (error) {
-      console.error("Error starting checkout:", error)
+      console.error('Error:', error)
     } finally {
-      setIsUpgrading(false)
+      setIsManagingSubscription(false)
     }
-  }, [isUpgrading])
+  }, [isManagingSubscription])
+
+  const handleUpgrade = React.useCallback(() => {
+    window.location.href = "/#pricing"
+  }, [])
 
   const handleSettingsClick = React.useCallback(() => {
     setShowSettingsSheet(true)
@@ -137,7 +141,7 @@ export function NavUser({
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium">{(user.subscription_tier || "Basic") + " Plan"}</span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -157,21 +161,49 @@ export function NavUser({
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">{(user.subscription_tier || "Basic") + " Plan"}</span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem
-                onSelect={handleUpgrade}
-                disabled={isUpgrading}
-                className="cursor-pointer"
-              >
-                <Sparkles />
-                {isUpgrading ? "Connecting..." : "Upgrade to Pro"}
-              </DropdownMenuItem>
+              {user.subscription_tier === "Pro" ? (
+                <>
+                  <DropdownMenuItem
+                    onSelect={handleManageSubscription}
+                    disabled={isManagingSubscription}
+                    className="cursor-pointer"
+                  >
+                    <CreditCard />
+                    {isManagingSubscription ? "Loading..." : "Manage Subscription"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={handleUpgrade}
+                    className="cursor-pointer"
+                  >
+                    <Sparkles />
+                    Upgrade to Ultra
+                  </DropdownMenuItem>
+                </>
+              ) : user.subscription_tier === "Ultra" ? (
+                <DropdownMenuItem
+                  onSelect={handleManageSubscription}
+                  disabled={isManagingSubscription}
+                  className="cursor-pointer"
+                >
+                  <CreditCard />
+                  {isManagingSubscription ? "Loading..." : "Manage Subscription"}
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  onSelect={handleUpgrade}
+                  className="cursor-pointer"
+                >
+                  <Sparkles />
+                  Upgrade
+                </DropdownMenuItem>
+              )}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface DownloadVideoButtonProps {
   presentationId: string;
@@ -19,6 +20,7 @@ interface JobStatusResponse {
 }
 
 export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps) {
+  const { darkMode } = useSettings();
   const [status, setStatus] = useState<JobStatus>('idle');
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -135,6 +137,10 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
       // Start video generation
       const response = await fetch(`/api/presentations/${presentationId}/video`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ darkMode }),
       });
 
       if (!response.ok) {

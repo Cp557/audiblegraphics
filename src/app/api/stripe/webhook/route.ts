@@ -109,20 +109,45 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
   
-  // Find user by Stripe customer ID
-  const { data: userData, error: fetchError } = await supabaseAdmin
-    .from('main_table')
-    .select('user_id')
-    .eq('stripe_customer_id', customerId)
-    .single();
+  // Retry logic to handle race condition with checkout.session.completed
+  let userData = null;
+  let attempts = 0;
+  const maxAttempts = 3;
 
-  if (fetchError || !userData) {
-    console.error('Webhook: User not found for customer:', customerId);
+  while (!userData && attempts < maxAttempts) {
+    const { data } = await supabaseAdmin
+      .from('main_table')
+      .select('user_id')
+      .eq('stripe_customer_id', customerId)
+      .single();
+    
+    if (data) {
+      userData = data;
+      break;
+    }
+
+    // Wait 1 second before retrying
+    attempts++;
+    if (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  if (!userData) {
+    console.error('Webhook: User not found for customer after retries:', customerId);
     return;
   }
 
   const item = subscription.items.data[0];
   const itemAny = item as any;
+  const priceId = item.plan.id;
+  
+  let subscriptionTier = null;
+  if (priceId.startsWith('price_1SU')) {
+    subscriptionTier = 'Pro';
+  } else if (priceId.startsWith('price_1SV')) {
+    subscriptionTier = 'Ultra';
+  }
   
   // Use current_period_start and current_period_end from the subscription item
   // These are automatically updated by Stripe on renewals
@@ -142,6 +167,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
       pro_start_date: currentPeriodStart,
       pro_end_date: currentPeriodEnd,
       cancel_at_period_end: subscription.cancel_at_period_end,
+      subscription_tier: subscriptionTier,
     })
     .eq('user_id', userData.user_id);
 

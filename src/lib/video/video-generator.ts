@@ -166,7 +166,8 @@ async function concatenateVideos(videoPaths: string[], outputPath: string): Prom
 export async function generatePresentationVideo(
   slides: Slide[],
   outputPath: string,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  options: { darkMode: boolean } = { darkMode: false }
 ): Promise<void> {
   const segmentPaths: string[] = [];
   const totalSlides = slides.length;
@@ -187,7 +188,10 @@ export async function generatePresentationVideo(
       }
 
       // Create frame for this slide
-      const frameBuffer = await createSlideFrame({ slide });
+      const frameBuffer = await createSlideFrame({ 
+        slide,
+        darkMode: options.darkMode 
+      });
 
       // Generate video segment
       const segmentPath = tmp.tmpNameSync({ postfix: '.mp4' });

@@ -16,8 +16,14 @@ interface SettingsSheetProps {
 }
 
 export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
-  const { autoplayAudio, setAutoplayAudio, autoSwitchSlide, setAutoSwitchSlide } =
-    useSettings();
+  const { 
+    autoplayAudio, 
+    setAutoplayAudio, 
+    autoSwitchSlide, 
+    setAutoSwitchSlide,
+    darkMode,
+    setDarkMode
+  } = useSettings();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -27,6 +33,23 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Dark Mode Setting */}
+          <div className="flex items-center justify-between space-x-4">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="dark-mode" className="text-sm font-medium">
+                Dark Mode
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Use dark background for slides and videos
+              </p>
+            </div>
+            <Switch
+              id="dark-mode"
+              checked={darkMode}
+              onCheckedChange={setDarkMode}
+            />
+          </div>
+
           {/* Autoplay Audio Setting */}
           <div className="flex items-center justify-between space-x-4">
             <div className="flex-1 space-y-1">

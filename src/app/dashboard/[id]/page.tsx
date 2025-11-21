@@ -43,10 +43,18 @@ export default async function PresentationPage({
   // Fetch all user presentations for sidebar
   const presentations = await getUserPresentations(user.id);
 
+  // Fetch user's subscription status
+  const { data: subscriptionData } = await supabase
+    .from("main_table")
+    .select("subscription_tier")
+    .eq("user_id", user.id)
+    .single();
+
   const sidebarUser = {
     name: user.user_metadata?.name || user.email || 'User',
     email: user.email || '',
     avatar: user.user_metadata?.avatar_url,
+    subscription_tier: subscriptionData?.subscription_tier as "Pro" | "Ultra" | null,
   };
 
   return (

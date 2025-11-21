@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 interface PricingCardsProps {
   isLoggedIn: boolean;
   userEmail?: string;
+  subscriptionTier?: 'Pro' | 'Ultra' | null;
 }
 
-export default function PricingCards({ isLoggedIn, userEmail }: PricingCardsProps) {
+export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }: PricingCardsProps) {
   const [isUpgradingPro, setIsUpgradingPro] = useState(false);
   const [isUpgradingUltra, setIsUpgradingUltra] = useState(false);
 
@@ -66,10 +67,15 @@ export default function PricingCards({ isLoggedIn, userEmail }: PricingCardsProp
     <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto">
       {/* Pro Plan Card */}
       <Card
-        className="border-2 border-gray-200"
+        className="border-2 border-gray-200 relative overflow-hidden"
         onMouseEnter={(e) => handleHover(e, true)}
         onMouseLeave={(e) => handleHover(e, false)}
       >
+        {subscriptionTier === 'Pro' && (
+          <div className="absolute top-0 right-0 bg-[#4A90E2] text-white text-xs font-bold px-3 py-1 rounded-bl-lg shadow-md z-10">
+            Current Plan
+          </div>
+        )}
         <CardHeader className="text-center space-y-4">
           <div>
             <CardTitle className="text-2xl mb-2">Pro Plan</CardTitle>
@@ -86,13 +92,13 @@ export default function PricingCards({ isLoggedIn, userEmail }: PricingCardsProp
             <li>✔︎ Priority support</li>
             <li>✔︎ Cancel anytime</li>
           </ul>
-          {isLoggedIn && (
+          {isLoggedIn && !subscriptionTier && (
             <Button
               onClick={() => handleUpgrade('pro')}
               disabled={isUpgradingPro}
               className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
             >
-              {isUpgradingPro ? "Loading..." : "Get Started"}
+              {isUpgradingPro ? "Loading..." : "Upgrade to Pro"}
             </Button>
           )}
         </CardContent>
@@ -100,10 +106,15 @@ export default function PricingCards({ isLoggedIn, userEmail }: PricingCardsProp
 
       {/* Ultra Plan Card */}
       <Card
-        className="border-2 border-gray-200"
+        className="border-2 border-gray-200 relative overflow-hidden"
         onMouseEnter={(e) => handleHover(e, true)}
         onMouseLeave={(e) => handleHover(e, false)}
       >
+        {subscriptionTier === 'Ultra' && (
+          <div className="absolute top-0 right-0 bg-[#4A90E2] text-white text-xs font-bold px-3 py-1 rounded-bl-lg shadow-md z-10">
+            Current Plan
+          </div>
+        )}
         <CardHeader className="text-center space-y-4">
           <div>
             <CardTitle className="text-2xl mb-2">Ultra Plan</CardTitle>
@@ -121,13 +132,13 @@ export default function PricingCards({ isLoggedIn, userEmail }: PricingCardsProp
             <li>✔︎ Advanced features</li>
             <li>✔︎ Cancel anytime</li>
           </ul>
-          {isLoggedIn && (
+          {isLoggedIn && subscriptionTier !== 'Ultra' && (
             <Button
               onClick={() => handleUpgrade('ultra')}
               disabled={isUpgradingUltra}
               className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
             >
-              {isUpgradingUltra ? "Loading..." : "Get Started"}
+              {isUpgradingUltra ? "Loading..." : "Upgrade to Ultra"}
             </Button>
           )}
         </CardContent>

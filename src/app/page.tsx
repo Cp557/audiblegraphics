@@ -15,15 +15,29 @@ import PricingCards from "@/components/PricingCards";
 const HomePage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
+  const [subscriptionTier, setSubscriptionTier] = useState<'Pro' | 'Ultra' | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
     
+    const fetchSubscription = async (userId: string) => {
+      const { data } = await supabase
+        .from('main_table')
+        .select('subscription_tier')
+        .eq('user_id', userId)
+        .single();
+      setSubscriptionTier(data?.subscription_tier as 'Pro' | 'Ultra' | null);
+    };
+
     // Check initial session
     supabase.auth.getSession().then((response: any) => {
-      setIsLoggedIn(!!response.data.session);
-      setUserEmail(response.data.session?.user?.email);
+      const session = response.data.session;
+      setIsLoggedIn(!!session);
+      setUserEmail(session?.user?.email);
+      if (session?.user) {
+        fetchSubscription(session.user.id);
+      }
       setLoading(false);
     });
 
@@ -31,6 +45,11 @@ const HomePage = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       setIsLoggedIn(!!session);
       setUserEmail(session?.user?.email);
+      if (session?.user) {
+        fetchSubscription(session.user.id);
+      } else {
+        setSubscriptionTier(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -68,8 +87,10 @@ const HomePage = () => {
         {/* Hero Section */}
         <section className="pt-16 pb-16 bg-[#FEFEFD]">
           <div className="max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center">
-            <Badge variant="outline" className="mb-4 bg-white">Mobile App</Badge>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Transform your life in 90 days.</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Generate Educational Slideshows in Seconds</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mt-4">
+              Simply enter a topic/question, and AudibleSlides will generate a slideshow with engaging visuals and narration.
+            </p>
           </div>
         </section>
 
@@ -80,43 +101,42 @@ const HomePage = () => {
         <section id="features" className="py-16">
           <div className="max-w-5xl mx-auto px-6">
             <div className="text-center mb-14">
-              <Badge variant="outline" className="mb-4 bg-white">Features</Badge>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything You Need to Succeed</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Features</h2>
             </div>
             
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Definite Chief Aim')} onMouseLeave={(e) => handleHover(e, false, 'Features - Definite Chief Aim')}>
+              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Topic to Video')} onMouseLeave={(e) => handleHover(e, false, 'Features - Topic to Video')}>
                 <CardHeader>
-                  <CardTitle>Definite Chief Aim</CardTitle>
+                  <CardTitle>Topic to Video</CardTitle>
                   <CardDescription className="mt-2">
-                    Set and focus on your most important 90-day definite chief aim.
+                    Just type a topic or question, and AI generates a full presentation for you.
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Daily Critical Tasks')} onMouseLeave={(e) => handleHover(e, false, 'Features - Daily Critical Tasks')}>
+              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - AI Visuals & Script')} onMouseLeave={(e) => handleHover(e, false, 'Features - AI Visuals & Script')}>
                 <CardHeader>
-                  <CardTitle>Daily Critical Tasks</CardTitle>
+                  <CardTitle>AI Visuals & Script</CardTitle>
                   <CardDescription className="mt-2">
-                    Complete 3 essential daily tasks that move you closer to achieving your chief aim.
+                    Automatically creates relevant visuals and a comprehensive narration script.
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Progress Tracker')} onMouseLeave={(e) => handleHover(e, false, 'Features - Progress Tracker')}>
+              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Natural Narration')} onMouseLeave={(e) => handleHover(e, false, 'Features - Natural Narration')}>
                 <CardHeader>
-                  <CardTitle>Progress Tracker</CardTitle>
+                  <CardTitle>Natural Narration</CardTitle>
                   <CardDescription className="mt-2">
-                    Visualize your 90-day journey with an intuitive progress tracking system.
+                    High-quality AI voices bring your generated content to life.
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Meet Alfie')} onMouseLeave={(e) => handleHover(e, false, 'Features - Meet Alfie')}>
+              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Edit & Export')} onMouseLeave={(e) => handleHover(e, false, 'Features - Edit & Export')}>
                 <CardHeader>
-                  <CardTitle>Alfie</CardTitle>
+                  <CardTitle>Edit & Export</CardTitle>
                   <CardDescription className="mt-2">
-                    Your AI accountability partner with daily check-ins to keep you on track.
+                    Review the generated content, tweak if needed, and download as HD video.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -127,47 +147,27 @@ const HomePage = () => {
         <div className="max-w-5xl mx-auto border-t border-gray-200" />
 
 
-        {/* Benefits Section */}
+        {/* About Section */}
         <section className="py-16">
-          <div className="max-w-5xl mx-auto px-6">
-            <div className="text-center mb-14">
-              <Badge variant="outline" className="mb-4 bg-white">Benefits</Badge>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Aim90?</h2>
-            </div>
-            
-            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3">
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Benefits - Proven Framework')} onMouseLeave={(e) => handleHover(e, false, 'Benefits - Proven Framework')}>
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-lg">Proven Framework</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600">
-                    Built on timeless principles from Napoleon Hill's "Think and Grow Rich," adapted for modern goal achievement.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Benefits - AI Accountability Partner')} onMouseLeave={(e) => handleHover(e, false, 'Benefits - AI Accountability Partner')}>
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-lg">AI Accountability Partner</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600">
-                    Alfie, your AI accountability partner, provides personalized check-ins and keeps you motivated throughout your 90-day journey.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Benefits - Focus on What Matters')} onMouseLeave={(e) => handleHover(e, false, 'Benefits - Focus on What Matters')}>
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-lg">Focus on What Matters</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600">
-                    Stay laser-focused on your single most important goal with daily tasks designed to drive meaningful progress.
-                  </p>
-                </CardContent>
-              </Card>
+          <div className="max-w-3xl mx-auto px-6 text-center">
+            <div className="mb-4">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">About</h2>
+              
+              <div className="space-y-6 text-lg text-gray-600 leading-relaxed">
+                <p>
+                  ChatGPT is a great tool for learning, but reading endless walls of plain text can get boring. AudibleSlides is a tool that makes learning more engaging, visual, and fun.
+                </p>
+                <p>
+                  AudibleSlides was built to encourage extreme curiosity in the age of AI, transforming simple topics & questions into immersive audiovisual experiences.
+                </p>
+                
+                <div className="pt-4 flex flex-col items-center">
+                  <blockquote className="text-xl font-medium text-gray-900 italic max-w-lg">
+                    &quot;Learning never exhausts the mind.&quot;
+                  </blockquote>
+                  <cite className="mt-3 text-sm text-gray-500 not-italic">— Leonardo da Vinci</cite>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -177,12 +177,11 @@ const HomePage = () => {
         {/* Pricing Section */}
         <section id="pricing" className="py-16">
           <div className="max-w-5xl mx-auto px-6 text-center mb-10">
-            <Badge variant="outline" className="mb-6 bg-white">Pricing</Badge>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Plan</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Pricing</h2>
           </div>
 
           <div className="max-w-5xl mx-auto px-6">
-            <PricingCards isLoggedIn={isLoggedIn} userEmail={userEmail} />
+            <PricingCards isLoggedIn={isLoggedIn} userEmail={userEmail} subscriptionTier={subscriptionTier} />
           </div>
         </section>
 
@@ -211,10 +210,10 @@ const HomePage = () => {
             </div>
             
             <div className="flex space-x-3">
-              <Link href="https://docs.google.com/document/d/1_tyc6xjePKLSjjDrFP5Cb5D7iqdfbQcl/edit?usp=sharing&ouid=105580698223202217739&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="footer-link">
+              <Link href="/terms" target="_blank" rel="noopener noreferrer" className="footer-link">
                 <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Terms of Service</Button>
               </Link>
-              <Link href="https://docs.google.com/document/d/1idJSO9TVnZKyM49ATBcWKxi9gr0v9fVa/edit?usp=sharing&ouid=105580698223202217739&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="footer-link">
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="footer-link">
                 <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Privacy</Button>
               </Link>
               <span className="inline-flex items-center justify-center h-9 px-4 py-2 rounded-md text-xs font-medium text-gray-500 cursor-default select-text">

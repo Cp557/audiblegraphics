@@ -30,7 +30,8 @@ async function ensureTempVideosDir(): Promise<void> {
  */
 export async function processVideoJob(
   jobId: string,
-  presentation: PresentationWithSlides
+  presentation: PresentationWithSlides,
+  options: { darkMode: boolean } = { darkMode: false }
 ): Promise<void> {
   let outputPath: string | null = null;
 
@@ -56,7 +57,8 @@ export async function processVideoJob(
         updateVideoJob(jobId, {
           progress: progress.progress,
         });
-      }
+      },
+      options
     );
 
     // Update job status to completed with server endpoint URL
@@ -125,10 +127,11 @@ export async function cleanupOldVideos(maxAgeMinutes: number = 30): Promise<void
  */
 export function startVideoGeneration(
   jobId: string,
-  presentation: PresentationWithSlides
+  presentation: PresentationWithSlides,
+  options: { darkMode: boolean } = { darkMode: false }
 ): void {
   // Fire and forget - don't await
-  processVideoJob(jobId, presentation).catch((error) => {
+  processVideoJob(jobId, presentation, options).catch((error) => {
     console.error('Fatal error in video generation:', error);
   });
 }

@@ -6,7 +6,7 @@
 import path from 'path';
 import { mkdir } from 'fs/promises';
 import { validateTopic, generateSlideshowMarkdown, generateImage } from './gemini';
-import { generateAudio } from './deepgram';
+import { generateAudio } from './audio-generator';
 import { uploadSlideImage, uploadSlideAudio, cleanupTempFiles } from '../supabase/storage';
 import type { GenerationOptions, SlideWithUrls } from './types';
 
@@ -32,7 +32,8 @@ export async function generateSlideshowWithAudio(
     topic,
     outputDir = 'public/generated-slideshows',
     userId,
-    presentationId
+    presentationId,
+    voice
   } = options;
 
   console.log('\n====== STARTING SLIDESHOW GENERATION ======');
@@ -73,7 +74,7 @@ export async function generateSlideshowWithAudio(
 
     // Generate audio and image in parallel
     const [, imageResult] = await Promise.all([
-      generateAudio(narration, audioPath),
+      generateAudio(narration, audioPath, voice ? { voice } : {}),
       imagePrompt ? generateImage(imagePrompt, imagePath, { imageSize: '1K' }) : null,
     ]);
 

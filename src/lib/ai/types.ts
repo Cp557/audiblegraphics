@@ -37,6 +37,7 @@ export interface GenerationOptions {
   outputDir?: string;
   userId?: string;
   presentationId?: string;
+  voice?: string;
 }
 
 /**

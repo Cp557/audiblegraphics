@@ -8,6 +8,11 @@ import mime from 'mime';
 import { writeFile } from 'fs/promises';
 import path from 'path';
 import type { SlideData, ImageOptions } from './types';
+import {
+  validateTopicOpenAI,
+  generateSlideshowMarkdownOpenAI,
+  generateImageOpenAI
+} from './openai';
 
 /**
  * Initialize Gemini client with API key
@@ -51,6 +56,10 @@ Input:Batman
 Output:1
 Input:Hitler
 Output:1
+Input:Pablo Escobar
+Output:1
+Input:How do nuclear bombs work?
+Output:1
 Input:bing bong
 Output:0
 Input:asdf
@@ -79,7 +88,12 @@ Output:0
 
     const result = response.text?.trim() || '0';
     return result === '1';
-  } catch (error) {
+  } catch (error: any) {
+    // Check for Rate Limit (429) or Server Error (500)
+    if (error?.status === 429 || error?.status === 500 || error?.code === 429 || error?.code === 500) {
+      console.warn(`Gemini validateTopic failed (${error.status || error.code}), switching to OpenAI...`);
+      return validateTopicOpenAI(topic);
+    }
     console.error('Error validating topic:', error);
     return false;
   }
@@ -158,7 +172,12 @@ Respond with a JSON array where each element represents a slide in the following
 
     const responseText = response.text || '';
     return parseSlideJSON(responseText);
-  } catch (error) {
+  } catch (error: any) {
+    // Fallback
+    if (error?.status === 429 || error?.status === 500 || error?.code === 429 || error?.code === 500) {
+      console.warn(`Gemini generateSlideshow failed (${error.status || error.code}), switching to OpenAI...`);
+      return generateSlideshowMarkdownOpenAI(topic);
+    }
     console.error('Error generating slideshow markdown:', error);
     throw error;
   }
@@ -292,7 +311,12 @@ export async function generateImage(
 
     console.log(`Image saved to: ${outputPath}`);
     return outputPath;
-  } catch (error) {
+  } catch (error: any) {
+    // Fallback
+    if (error?.status === 429 || error?.status === 500 || error?.code === 429 || error?.code === 500) {
+      console.warn(`Gemini generateImage failed (${error.status || error.code}), switching to OpenAI...`);
+      return generateImageOpenAI(enhancedPrompt, outputPath, options);
+    }
     console.error('Error generating image:', error);
     return '';
   }

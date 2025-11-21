@@ -20,7 +20,7 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
     typeof window === 'undefined' ? 0 : window.innerHeight,
   );
   const audioRef = useRef<HTMLAudioElement>(null);
-  const { autoplayAudio, autoSwitchSlide } = useSettings();
+  const { autoplayAudio, autoSwitchSlide, darkMode } = useSettings();
 
   // Preload all images
   useEffect(() => {
@@ -180,7 +180,9 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
     <div className="flex w-full flex-1 flex-col items-center px-4 py-4 pt-8 sm:px-6 sm:pt-10 lg:px-8">
       <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl">
         <div
-          className="flex h-full flex-col rounded-lg border bg-card p-4 sm:p-6 shadow-sm"
+          className={`flex h-full flex-col rounded-lg border p-4 sm:p-6 shadow-sm transition-colors duration-300 ${
+            darkMode ? 'bg-[#333333] text-white border-gray-600' : 'bg-white text-black'
+          }`}
           style={cardMaxHeight ? { maxHeight: `${cardMaxHeight}px` } : undefined}
         >
           <div className="flex flex-1 flex-col gap-4 overflow-hidden">
@@ -192,7 +194,11 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
                 onClick={handlePrevious}
                 disabled={currentSlideIndex === 0}
                 aria-label="Previous slide"
-                className="cursor-pointer transition-transform hover:scale-105 hover:bg-muted/70 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className={`cursor-pointer transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+                  darkMode 
+                    ? 'border-white/50 bg-white/10 hover:bg-white/20 text-white disabled:opacity-30' 
+                    : 'hover:bg-muted/70'
+                }`}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -207,7 +213,11 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
                 onClick={handleNext}
                 disabled={currentSlideIndex === slides.length - 1}
                 aria-label="Next slide"
-                className="cursor-pointer transition-transform hover:scale-105 hover:bg-muted/70 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className={`cursor-pointer transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+                  darkMode 
+                    ? 'border-white/50 bg-white/10 hover:bg-white/20 text-white disabled:opacity-30' 
+                    : 'hover:bg-muted/70'
+                }`}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -216,7 +226,7 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
             <div className="flex-1 space-y-4 overflow-auto pr-1">
               {/* Slide Content (Bullet Points) */}
               {bulletItems ? (
-                <ul className="list-disc space-y-2 px-6 py-2 font-serif text-lg leading-relaxed tracking-wide text-foreground text-center list-inside">
+                <ul className={`list-disc space-y-2 px-6 py-2 font-serif text-lg leading-relaxed tracking-wide text-center list-inside ${darkMode ? 'text-white' : 'text-foreground'}`}>
                   {bulletItems.map((item, idx) => (
                     <li key={idx}>{item}</li>
                   ))}
