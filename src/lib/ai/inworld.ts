@@ -30,7 +30,7 @@ export async function generateInworldAudio(
 
   const requestBody = {
     text: narration,
-    voice_id: options.voice || "Dennis", // Default to Dennis as per user snippet
+    voice_id: options.voice || "Craig", // Default to Dennis as per user snippet
     audio_config: {
       audio_encoding: "MP3", // Inworld seems to default to MP3 based on snippet
       speaking_rate: 1,

@@ -1,36 +1,26 @@
 /**
- * TypeScript type definitions for AI slideshow generation
+ * TypeScript type definitions for AI infographic generation
  */
 
 /**
- * Represents a single slide with content, speaker notes, and image prompt
+ * Represents the generated content for an infographic
  */
-export interface SlideData {
-  slide_title: string;
-  slide_content: string;
+export interface InfographicData {
   speaker_notes: string;
+  script_sections: string[];
   image_prompt: string;
 }
 
 /**
- * Result of the complete slideshow generation process
+ * Result of the generation process with URLs
  */
-export interface GenerationResult {
-  slides_md: string[];
-  audio_files: string[];
-  image_files: (string | null)[];
-}
-
-/**
- * Enhanced slide data with storage URLs
- */
-export interface SlideWithUrls extends SlideData {
+export interface InfographicResult extends InfographicData {
   image_url: string;
   audio_url: string;
 }
 
 /**
- * Options for slideshow generation
+ * Options for generation
  */
 export interface GenerationOptions {
   topic: string;

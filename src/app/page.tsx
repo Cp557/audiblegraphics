@@ -104,39 +104,30 @@ const HomePage = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Features</h2>
             </div>
             
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Topic to Video')} onMouseLeave={(e) => handleHover(e, false, 'Features - Topic to Video')}>
+            <div className="grid gap-8 md:grid-cols-3">
+              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Custom Voices')} onMouseLeave={(e) => handleHover(e, false, 'Features - Custom Voices')}>
                 <CardHeader>
-                  <CardTitle>Topic to Video</CardTitle>
+                  <CardTitle>Custom Voices</CardTitle>
                   <CardDescription className="mt-2">
-                    Just type a topic or question, and AI generates a full presentation for you.
+                    Choose from a variety of high-quality AI voices to narrate your slideshows.
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - AI Visuals & Script')} onMouseLeave={(e) => handleHover(e, false, 'Features - AI Visuals & Script')}>
+              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Generation & Storage')} onMouseLeave={(e) => handleHover(e, false, 'Features - Generation & Storage')}>
                 <CardHeader>
-                  <CardTitle>AI Visuals & Script</CardTitle>
+                  <CardTitle>Storage</CardTitle>
                   <CardDescription className="mt-2">
-                    Automatically creates relevant visuals and a comprehensive narration script.
+                    Generated slideshows are automatically saved to your library for future access.
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Natural Narration')} onMouseLeave={(e) => handleHover(e, false, 'Features - Natural Narration')}>
+              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Export as MP4')} onMouseLeave={(e) => handleHover(e, false, 'Features - Export as MP4')}>
                 <CardHeader>
-                  <CardTitle>Natural Narration</CardTitle>
+                  <CardTitle>Export as MP4</CardTitle>
                   <CardDescription className="mt-2">
-                    High-quality AI voices bring your generated content to life.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Edit & Export')} onMouseLeave={(e) => handleHover(e, false, 'Features - Edit & Export')}>
-                <CardHeader>
-                  <CardTitle>Edit & Export</CardTitle>
-                  <CardDescription className="mt-2">
-                    Review the generated content, tweak if needed, and download as HD video.
+                    Download your slideshows as MP4 videos ready to share on any platform.
                   </CardDescription>
                 </CardHeader>
               </Card>

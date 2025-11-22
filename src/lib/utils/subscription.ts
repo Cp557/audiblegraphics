@@ -2,6 +2,26 @@ export interface SubscriptionData {
   pro_end_date?: string | null;
   cancel_at_period_end?: boolean | null;
   subscription_tier?: 'Pro' | 'Ultra' | null;
+  monthly_generated_slideshows?: number | null;
+  last_reset_date?: string | null;
+  pro_start_date?: string | null;
+}
+
+export const SLIDE_LIMITS = {
+  FREE: 1,
+  PRO: 10,
+  ULTRA: 50,
+} as const;
+
+export function getSlideshowLimit(tier?: string | null): number {
+  switch (tier) {
+    case 'Pro':
+      return SLIDE_LIMITS.PRO;
+    case 'Ultra':
+      return SLIDE_LIMITS.ULTRA;
+    default:
+      return SLIDE_LIMITS.FREE;
+  }
 }
 
 /**

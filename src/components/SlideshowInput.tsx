@@ -13,49 +13,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const VOICES = [
+  { id: 'Craig', name: 'Craig' },
   { id: 'Dennis', name: 'Dennis' },
   { id: 'Alex', name: 'Alex' },
   { id: 'Deborah', name: 'Deborah' },
-  { id: 'Craig', name: 'Craig' },
   { id: 'Hades', name: 'Hades' },
   { id: 'Olivia', name: 'Olivia' },
 ] as const;
 
 export function SlideshowInput() {
   const [topic, setTopic] = useState('');
-  const [voice, setVoice] = useState('Dennis');
+  const [voice, setVoice] = useState('Craig');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
-
-  const preloadSlideImages = async (
-    slides: Array<{ image_url?: string | null }> | undefined,
-  ) => {
-    if (typeof window === 'undefined' || !slides || slides.length === 0) {
-      return;
-    }
-
-    const urls = slides
-      .map((slide) => slide.image_url)
-      .filter((url): url is string => Boolean(url));
-
-    if (urls.length === 0) {
-      return;
-    }
-
-    await Promise.all(
-      urls.map(
-        (url) =>
-          new Promise<void>((resolve) => {
-            const img = new window.Image();
-            img.onload = img.onerror = () => resolve();
-            img.src = url;
-          }),
-      ),
-    );
-  };
 
   const handlePlayVoice = (voiceId: string) => {
     // Stop currently playing audio if any
@@ -95,7 +68,7 @@ export function SlideshowInput() {
 
     setLoading(true);
     setError(null);
-    console.log('🚀 Generating slideshow for topic:', topic);
+    console.log('🚀 Generating infographic for topic:', topic);
     console.log('⏳ This may take 30-60 seconds...');
 
     try {
@@ -114,23 +87,28 @@ export function SlideshowInput() {
         setError(
           typeof data?.error === 'string'
             ? data.error
-            : 'Something went wrong while generating the slideshow. Please try again.'
+            : 'Something went wrong while generating the infographic. Please try again.'
         );
         setLoading(false);
         return;
       }
 
-      console.log('✅ Slideshow generated successfully!');
+      console.log('✅ Infographic generated successfully!');
       console.log('📊 Result:', data);
 
       // Navigate to the newly created presentation
       if (data.presentation_id) {
-        await preloadSlideImages(data.slides);
+        // Prefetch the image if available to speed up display
+        if (data.image_url) {
+          const img = new window.Image();
+          img.src = data.image_url;
+        }
+        
         router.prefetch(`/dashboard/${data.presentation_id}`);
         router.push(`/dashboard/${data.presentation_id}`);
       }
     } catch (error) {
-      console.error('❌ Failed to generate slideshow:', error);
+      console.error('❌ Failed to generate infographic:', error);
       setError('Unable to reach the server. Please check your connection and try again.');
       setLoading(false);
     }
@@ -142,10 +120,10 @@ export function SlideshowInput() {
         <div className="flex flex-col items-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
           <p className="mt-6 text-center text-lg font-semibold">
-            Generating slideshow
+            Generating infographic
           </p>
           <p className="mt-2 text-center text-sm text-muted-foreground">
-            We will redirect you once it&apos;s finished.
+            Creating script, visuals, and narration...
           </p>
         </div>
       ) : (
@@ -157,7 +135,7 @@ export function SlideshowInput() {
             <div className="flex gap-2">
               <Input
                 type="text"
-                placeholder="e.g. Milky Way Galaxy. History of Rome. Do fish ever get thirsty? How does lightning form?"
+                placeholder="e.g. Milky Way Galaxy. History of Rome. How does lightning form?"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 disabled={loading}
@@ -181,7 +159,7 @@ export function SlideshowInput() {
                     variant="outline"
                     className="min-w-[140px] justify-between"
                   >
-                    {VOICES.find((v) => v.id === voice)?.name || 'Dennis'}
+                    {VOICES.find((v) => v.id === voice)?.name || 'Craig'}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -227,4 +205,3 @@ export function SlideshowInput() {
     </div>
   );
 }
-

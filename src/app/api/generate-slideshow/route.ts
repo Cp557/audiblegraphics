@@ -1,13 +1,18 @@
 /**
- * API route for generating AI-powered slideshows
+ * API route for generating AI-powered infographics
  * POST /api/generate-slideshow
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { generateSlideshowWithAudio, validateSlideshowTopic } from '@/lib/ai/generate-slideshow';
-import { createPresentation, createSlide, deletePresentation as dbDeletePresentation } from '@/lib/supabase/presentations';
+import { generateInfographicWithAudio, validateSlideshowTopic } from '@/lib/ai/generate-slideshow';
+import { 
+  createPresentation, 
+  updatePresentationAssets, 
+  deletePresentation as dbDeletePresentation 
+} from '@/lib/supabase/presentations';
 import { deletePresentation as storageDeletePresentation } from '@/lib/supabase/storage';
+import { getSlideshowLimit } from '@/lib/utils/subscription';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,7 +26,7 @@ interface GenerateSlideshowRequest {
 }
 
 /**
- * Generate a complete slideshow with audio and images
+ * Generate a complete infographic with audio and images
  */
 export async function POST(request: NextRequest) {
   try {
@@ -35,6 +40,65 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // --- RATE LIMIT CHECK START ---
+    
+    // 1. Get user subscription and usage data
+    const { data: userData, error: userError } = await supabase
+      .from('main_table')
+      .select('subscription_tier, pro_start_date, monthly_generated_slideshows, last_reset_date')
+      .eq('user_id', user.id)
+      .single();
+
+    if (userError && userError.code !== 'PGRST116') { // PGRST116 is "not found" which might be fine for new users
+      console.error('Error fetching user data:', userError);
+    }
+
+    // 2. Determine if usage needs to be reset
+    let currentUsage = userData?.monthly_generated_slideshows || 0;
+    let shouldReset = false;
+    const now = new Date();
+    const lastReset = userData?.last_reset_date ? new Date(userData.last_reset_date) : new Date(0);
+    
+    if (userData?.subscription_tier && userData?.pro_start_date) {
+      // For subscribers: Reset if the billing period start date is newer than our last reset
+      const billingStart = new Date(userData.pro_start_date);
+      if (billingStart > lastReset) {
+        shouldReset = true;
+      }
+    } else {
+      // For free users: Reset if we are in a new month compared to last reset
+      if (now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear()) {
+        shouldReset = true;
+      }
+    }
+
+    if (shouldReset) {
+      currentUsage = 0;
+      // We will update this in the database later or now
+      await supabase
+        .from('main_table')
+        .update({ 
+          monthly_generated_slideshows: 0,
+          last_reset_date: now.toISOString() 
+        })
+        .eq('user_id', user.id);
+    }
+
+    // 3. Check limits
+    const limit = getSlideshowLimit(userData?.subscription_tier);
+    
+    if (currentUsage >= limit) {
+      return NextResponse.json(
+        { 
+          error: `You have reached your monthly limit of ${limit} infographics. Please upgrade your plan for more.`,
+          limitReached: true 
+        },
+        { status: 403 }
+      );
+    }
+    
+    // --- RATE LIMIT CHECK END ---
 
     // Parse request body
     const body = (await request.json()) as GenerateSlideshowRequest;
@@ -64,14 +128,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[API] Generating slideshow for user ${user.id} on topic: "${topic}"`);
+    console.log(`[API] Generating infographic for user ${user.id} on topic: "${topic}"`);
 
     // Validate topic first (quick check before expensive generation)
     const isValid = await validateSlideshowTopic(topic);
     if (!isValid) {
       return NextResponse.json(
         {
-          error: `The topic "${topic}" is not suitable for a slideshow. Please provide a valid educational topic.`,
+          error: `The topic "${topic}" is not suitable for an infographic. Please provide a valid educational topic.`,
         },
         { status: 400 }
       );
@@ -82,34 +146,26 @@ export async function POST(request: NextRequest) {
     const presentation = await createPresentation(user.id, topic);
     console.log(`[API] Presentation created with ID: ${presentation.id}`);
 
-    let slidesWithUrls;
+    let result;
     try {
-      // Step 2: Generate slideshow with Supabase upload
-      console.log('[API] Generating slideshow content and uploading to Supabase...');
-      slidesWithUrls = await generateSlideshowWithAudio({
+      // Step 2: Generate content and upload
+      console.log('[API] Generating infographic content...');
+      result = await generateInfographicWithAudio({
         topic,
         userId: user.id,
         presentationId: presentation.id,
         voice,
       });
 
-      // Step 3: Save slides to database
-      console.log('[API] Saving slides to database...');
-      const slidePromises = slidesWithUrls.map((slideData, index) =>
-        createSlide({
-          presentation_id: presentation.id,
-          order_index: index,
-          slide_title: slideData.slide_title,
-          slide_content: slideData.slide_content,
-          speaker_notes: slideData.speaker_notes,
-          image_prompt: slideData.image_prompt,
-          image_url: slideData.image_url,
-          audio_url: slideData.audio_url,
-        })
-      );
+      // Step 3: Save assets to database
+      console.log('[API] Saving assets to database...');
+      await updatePresentationAssets(presentation.id, user.id, {
+        image_url: result.image_url,
+        audio_url: result.audio_url,
+        speaker_notes: result.speaker_notes
+      });
 
-      await Promise.all(slidePromises);
-      console.log(`[API] Successfully saved ${slidesWithUrls.length} slides to database`);
+      console.log('[API] Successfully saved assets to database');
     } catch (error) {
       // Cleanup: If generation or database save fails, delete the presentation
       console.error('[API] Error during generation, cleaning up...');
@@ -122,7 +178,18 @@ export async function POST(request: NextRequest) {
       throw error; // Re-throw to be caught by outer catch
     }
 
-    console.log(`[API] Successfully generated slideshow for topic: "${topic}"`);
+    console.log(`[API] Successfully generated infographic for topic: "${topic}"`);
+
+    // Increment usage count
+    const { error: incrementError } = await supabase
+      .from('main_table')
+      .update({ monthly_generated_slideshows: currentUsage + 1 })
+      .eq('user_id', user.id);
+      
+    if (incrementError) {
+      console.error('[API] Error incrementing usage count:', incrementError);
+      // We don't fail the request here because the user already got their infographic
+    }
 
     return NextResponse.json(
       {
@@ -130,28 +197,21 @@ export async function POST(request: NextRequest) {
         presentation_id: presentation.id,
         title: presentation.title,
         created_at: presentation.created_at,
-        slides: slidesWithUrls.map((slide, index) => ({
-          order_index: index,
-          slide_title: slide.slide_title,
-          slide_content: slide.slide_content,
-          speaker_notes: slide.speaker_notes,
-          image_prompt: slide.image_prompt,
-          image_url: slide.image_url,
-          audio_url: slide.audio_url,
-        })),
-        slideCount: slidesWithUrls.length,
+        image_url: result.image_url,
+        audio_url: result.audio_url,
+        speaker_notes: result.speaker_notes
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error('[API] Error generating slideshow:', error);
+    console.error('[API] Error generating infographic:', error);
 
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
 
     return NextResponse.json(
       {
-        error: 'Failed to generate slideshow',
+        error: 'Failed to generate infographic',
         details: errorMessage,
       },
       { status: 500 }

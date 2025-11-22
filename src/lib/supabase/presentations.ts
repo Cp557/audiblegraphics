@@ -1,6 +1,6 @@
 /**
- * Database operations for presentations and slides
- * Handles CRUD operations for the presentations and slides tables
+ * Database operations for infographics (formerly presentations)
+ * Handles CRUD operations for the presentations table
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -15,39 +15,14 @@ export interface Presentation {
   id: string;
   user_id: string;
   title: string;
+  image_url: string | null;
+  audio_url: string | null;
+  speaker_notes: string | null;
   created_at: string;
-}
-
-export interface Slide {
-  id: string;
-  presentation_id: string;
-  order_index: number;
-  slide_title: string;
-  slide_content: string;
-  speaker_notes: string;
-  image_prompt: string;
-  image_url: string;
-  audio_url: string;
-  created_at: string;
-}
-
-export interface SlideInput {
-  presentation_id: string;
-  order_index: number;
-  slide_title: string;
-  slide_content: string;
-  speaker_notes: string;
-  image_prompt: string;
-  image_url: string;
-  audio_url: string;
-}
-
-export interface PresentationWithSlides extends Presentation {
-  slides: Slide[];
 }
 
 /**
- * Create a new presentation
+ * Create a new presentation entry
  * @param userId - User ID
  * @param title - Presentation title
  * @returns Created presentation
@@ -73,61 +48,53 @@ export async function createPresentation(
 }
 
 /**
- * Create a new slide
- * @param slideData - Slide data
- * @returns Created slide
+ * Update presentation with generated assets
+ * @param presentationId - Presentation ID
+ * @param userId - User ID
+ * @param assets - Generated assets (image, audio, notes)
  */
-export async function createSlide(slideData: SlideInput): Promise<Slide> {
+export async function updatePresentationAssets(
+  presentationId: string,
+  userId: string,
+  assets: { image_url: string; audio_url: string; speaker_notes: string }
+): Promise<Presentation> {
   const { data, error } = await supabaseAdmin
-    .from('slides')
-    .insert(slideData)
+    .from('presentations')
+    .update(assets)
+    .eq('id', presentationId)
+    .eq('user_id', userId)
     .select()
     .single();
 
   if (error) {
-    throw new Error(`Failed to create slide: ${error.message}`);
+    throw new Error(`Failed to update presentation assets: ${error.message}`);
   }
 
   return data;
 }
 
 /**
- * Get a presentation with all its slides
+ * Get a presentation
  * @param presentationId - Presentation ID
  * @param userId - User ID (for RLS check)
- * @returns Presentation with slides
+ * @returns Presentation
  */
 export async function getPresentation(
   presentationId: string,
   userId: string
-): Promise<PresentationWithSlides | null> {
-  // Fetch presentation
-  const { data: presentation, error: presentationError } = await supabaseAdmin
+): Promise<Presentation | null> {
+  const { data, error } = await supabaseAdmin
     .from('presentations')
     .select('*')
     .eq('id', presentationId)
     .eq('user_id', userId)
     .single();
 
-  if (presentationError || !presentation) {
+  if (error || !data) {
     return null;
   }
 
-  // Fetch slides
-  const { data: slides, error: slidesError } = await supabaseAdmin
-    .from('slides')
-    .select('*')
-    .eq('presentation_id', presentationId)
-    .order('order_index', { ascending: true });
-
-  if (slidesError) {
-    throw new Error(`Failed to fetch slides: ${slidesError.message}`);
-  }
-
-  return {
-    ...presentation,
-    slides: slides || [],
-  };
+  return data;
 }
 
 /**
@@ -152,7 +119,7 @@ export async function getUserPresentations(
 }
 
 /**
- * Delete a presentation (CASCADE will delete slides automatically)
+ * Delete a presentation
  * @param presentationId - Presentation ID
  * @param userId - User ID (for security check)
  */
