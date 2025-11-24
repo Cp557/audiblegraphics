@@ -1,6 +1,9 @@
 import { type NextRequest } from 'next/server'
 import { updateSession } from './src/lib/supabase/middleware'
 
+// Force middleware to run on Node.js runtime instead of Edge
+export const runtime = 'nodejs'
+
 export async function middleware(request: NextRequest) {
   return await updateSession(request)
 }
