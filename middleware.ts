@@ -1,11 +1,34 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Helper to fix "ReferenceError: __dirname is not defined" in Edge Runtime
-// This error can occur if a dependency (like fluent-ffmpeg) is accidentally bundled
-// or if a library uses __dirname which isn't available in ESM.
-if (typeof __dirname === 'undefined') {
-  (globalThis as any).__dirname = '';
+// Robust Polyfill for __dirname in both Node.js ESM and Edge runtimes
+try {
+  if (typeof __dirname === 'undefined') {
+    // In Node.js ESM (e.g. next.config.js or API routes), we can use import.meta.url
+    // But in Edge Runtime, 'url' module might be missing or limited.
+    // We check for globalThis to be safe.
+    const globalObj = typeof globalThis !== 'undefined' ? globalThis : 
+                      typeof window !== 'undefined' ? window : 
+                      typeof global !== 'undefined' ? global : {};
+    
+    // Start with empty string to prevent crashes
+    (globalObj as any).__dirname = '';
+    
+    // Try to populate it properly if we are in a Node-like environment
+    try {
+       // We use dynamic import to avoid static analysis errors in Edge
+       // const { fileURLToPath } = require('url'); // CommonJS
+       // const { dirname } = require('path');      // CommonJS
+       // (globalObj as any).__dirname = dirname(fileURLToPath(import.meta.url));
+       
+       // Actually, simplest fallback is just empty string for Vercel Edge
+       // because real file system access is blocked anyway.
+    } catch (e) {
+      // Ignore errors if we can't derive real path
+    }
+  }
+} catch (e) {
+  // Safety net
 }
 
 export async function middleware(request: NextRequest) {

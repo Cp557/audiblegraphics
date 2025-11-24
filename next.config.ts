@@ -19,8 +19,6 @@ const nextConfig: NextConfig = {
     '@ffmpeg-installer/linux-x64',
     '@ffprobe-installer/win32-x64',
     '@ffprobe-installer/linux-x64',
-    'fluent-ffmpeg',
-    'sharp',
   ],
 };
 
