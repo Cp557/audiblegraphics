@@ -17,8 +17,8 @@ import { getSlideshowLimit } from '@/lib/utils/subscription';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Increase timeout for AI generation (10 minutes)
-export const maxDuration = 600;
+// Increase timeout for AI generation (max allowed on Vercel Hobby: 300s)
+export const maxDuration = 300;
 
 interface GenerateSlideshowRequest {
   topic: string;
