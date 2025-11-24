@@ -87,9 +87,9 @@ const HomePage = () => {
         {/* Hero Section */}
         <section className="pt-16 pb-16 bg-[#FEFEFD]">
           <div className="max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Generate Educational Slideshows in Seconds</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Generate Narrated Infographics in Seconds</h2>
             <p className="text-lg text-gray-600 max-w-2xl mt-4">
-              Simply enter a topic/question, and AudibleSlides will generate a slideshow with engaging visuals and narration.
+              Simply enter a topic and AudibleGraphics will generate an infographic with engaging visuals and narration.
             </p>
           </div>
         </section>
@@ -109,7 +109,7 @@ const HomePage = () => {
                 <CardHeader>
                   <CardTitle>Custom Voices</CardTitle>
                   <CardDescription className="mt-2">
-                    Choose from a variety of high-quality AI voices to narrate your slideshows.
+                    Choose from a variety of high-quality AI voices to narrate your infographics.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -118,7 +118,7 @@ const HomePage = () => {
                 <CardHeader>
                   <CardTitle>Storage</CardTitle>
                   <CardDescription className="mt-2">
-                    Generated slideshows are automatically saved to your library for future access.
+                    Generated infographics are automatically saved to your library for future access.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -127,7 +127,7 @@ const HomePage = () => {
                 <CardHeader>
                   <CardTitle>Export as MP4</CardTitle>
                   <CardDescription className="mt-2">
-                    Download your slideshows as MP4 videos ready to share on any platform.
+                    Download your infographics as MP4 videos ready to share on any platform.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -146,10 +146,10 @@ const HomePage = () => {
               
               <div className="space-y-6 text-lg text-gray-600 leading-relaxed">
                 <p>
-                  ChatGPT is a great tool for learning, but reading endless walls of plain text can get boring. AudibleSlides is a tool that makes learning more engaging, visual, and fun.
+                  ChatGPT is a great tool for learning, but reading endless walls of plain text can get boring. AudibleGraphics is a tool that makes learning more engaging, visual, and fun.
                 </p>
                 <p>
-                  AudibleSlides was built to encourage extreme curiosity in the age of AI, transforming simple topics & questions into immersive audiovisual experiences.
+                  AudibleGraphics was built to encourage extreme curiosity in the age of AI, transforming simple topics & questions into immersive audiovisual experiences.
                 </p>
                 
                 <div className="pt-4 flex flex-col items-center">
@@ -189,13 +189,13 @@ const HomePage = () => {
                 <div className="h-6 w-6 relative">
                   <Image 
                     src={logo} 
-                    alt="AudibleSlides Logo" 
+                    alt="AudibleGraphics Logo" 
                     fill
                     style={{ objectFit: 'contain' }}
                   />
                 </div>
                 <span className="ml-2 text-base font-semibold text-gray-900">
-                  AudibleSlides
+                  AudibleGraphics
                 </span>
               </Link>
             </div>
@@ -208,14 +208,14 @@ const HomePage = () => {
                 <Button variant="link" className="text-xs text-gray-500 hover:text-[#4A90E2]">Privacy</Button>
               </Link>
               <span className="inline-flex items-center justify-center h-9 px-4 py-2 rounded-md text-xs font-medium text-gray-500 cursor-default select-text">
-                Contact@audibleslides.com
+                contact@audiblegraphics.com
               </span>
             </div>
           </div>
 
           <div className="text-center mt-8">
             <p className="text-xs text-gray-500">
-              &copy; {new Date().getFullYear()} AudibleSlides. All rights reserved.
+              &copy; {new Date().getFullYear()} AudibleGraphics. All rights reserved.
             </p>
           </div>
         </div>

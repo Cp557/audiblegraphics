@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Audible Slides",
-  description: "AudibleSlides is a website that generates narrated slideshows for educational purposes.",
+  title: "AudibleGraphics",
+  description: "AudibleGraphics is a website that generates narrated infographics for educational purposes.",
   icons: {
     icon: '/logo.svg',
   },

@@ -62,6 +62,8 @@ export async function POST(request: NextRequest) {
     
     if (userData?.subscription_tier && userData?.pro_start_date) {
       // For subscribers: Reset if the billing period start date is newer than our last reset
+      // This resets usage on monthly renewals, but NOT on mid-cycle upgrades
+      // (since Stripe keeps the same current_period_start during upgrades)
       const billingStart = new Date(userData.pro_start_date);
       if (billingStart > lastReset) {
         shouldReset = true;

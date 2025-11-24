@@ -4,6 +4,11 @@ import type { AudioOptions } from './types';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import ffmpeg from 'fluent-ffmpeg';
+import { ffmpegPath } from '../video/ffmpeg-config';
+
+// Set ffmpeg path
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 /**
  * Generate audio from a list of text sections and stitch them together.
@@ -32,21 +37,23 @@ export async function generateAudioFromSections(
   try {
     console.log(`Generating audio for ${sections.length} sections...`);
 
-    // Generate audio for each chunk sequentially
-    for (let i = 0; i < sections.length; i++) {
-      const chunkText = sections[i];
-      const chunkPath = path.join(tempDir, `chunk_${i.toString().padStart(3, '0')}.wav`);
+    // Generate audio for each chunk in parallel
+    const chunkPromises = sections.map(async (chunkText, i) => {
+      const chunkPath = path.join(tempDir, `chunk_${i.toString().padStart(3, '0')}.mp3`);
       
       console.log(`[Chunk ${i+1}/${sections.length}] Generating (${chunkText.length} chars)...`);
       
       try {
-        await generateAudio(chunkText, chunkPath, options);
-        chunkPaths.push(chunkPath);
+        return await generateAudio(chunkText, chunkPath, options);
       } catch (error) {
         console.error(`Failed to generate chunk ${i}, skipping:`, error);
-        // If a chunk fails, we continue to the next one to salvage what we can
+        return null;
       }
-    }
+    });
+
+    const results = await Promise.all(chunkPromises);
+    // Filter out nulls (failed chunks)
+    chunkPaths.push(...results.filter((p): p is string => p !== null));
 
     if (chunkPaths.length === 0) {
       throw new Error('All audio chunks failed to generate');
@@ -54,7 +61,7 @@ export async function generateAudioFromSections(
 
     // Stitch chunks together
     console.log(`Stitching ${chunkPaths.length} audio chunks...`);
-    await stitchWavFiles(chunkPaths, outputPath);
+    await stitchAudioFiles(chunkPaths, outputPath);
     
     return outputPath;
 
@@ -112,37 +119,61 @@ export async function generateAudio(
 }
 
 /**
- * Simple WAV file stitcher
- * Reads headers to find data chunks and concatenates them.
- * Assumes all files have same format (sample rate, channels, etc).
+ * Stitch audio files together using FFmpeg
+ * Works with both MP3 and WAV files
  */
-async function stitchWavFiles(inputPaths: string[], outputPath: string) {
-  const buffers: Buffer[] = [];
+async function stitchAudioFiles(inputPaths: string[], outputPath: string): Promise<void> {
+  if (inputPaths.length === 0) return;
+
+  // Path to silence file in public directory
+  // We use process.cwd() to find it relative to project root
+  const silencePath = path.join(process.cwd(), 'public', 'silence.mp3');
   
-  for (const inputPath of inputPaths) {
-    const buffer = await fs.readFile(inputPath);
-    buffers.push(buffer);
+  // Check if silence file exists, if not, we'll skip adding silence
+  let hasSilence = false;
+  try {
+    await fs.access(silencePath);
+    hasSilence = true;
+  } catch (e) {
+    console.warn('Silence file not found at:', silencePath);
   }
 
-  if (buffers.length === 0) return;
-
-  // Use first file as header template (first 44 bytes usually)
-  // This is a simplified approach. For production robustness with mixed formats,
-  // use a library like 'wavefile' or ffmpeg.
-  const header = buffers[0].subarray(0, 44);
-  const dataChunks = buffers.map(b => b.subarray(44));
+  // Build the list of files to concatenate
+  // Format: [silence, chunk1, silence, chunk2, silence, ...]
+  const filesToConcat: string[] = [];
   
-  const totalDataLength = dataChunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const combinedData = Buffer.concat(dataChunks);
-
-  // Update header size fields
-  // RIFF chunk size (file size - 8) at offset 4
-  const fileSize = 36 + totalDataLength;
-  header.writeUInt32LE(fileSize, 4);
+  if (hasSilence) {
+    filesToConcat.push(silencePath);
+  }
   
-  // Data subchunk size at offset 40
-  header.writeUInt32LE(totalDataLength, 40);
+  for (let i = 0; i < inputPaths.length; i++) {
+    filesToConcat.push(inputPaths[i]);
+    // Add silence after every chunk (including the last one)
+    if (hasSilence) {
+      filesToConcat.push(silencePath);
+    }
+  }
 
-  const finalBuffer = Buffer.concat([header, combinedData]);
-  await fs.writeFile(outputPath, finalBuffer);
+  // Create a concat list file for ffmpeg
+  // If we only have one chunk and no silence, this logic still holds fine (just one entry)
+  const concatListPath = path.join(path.dirname(inputPaths[0]), 'concat_list.txt');
+  const listContent = filesToConcat.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n');
+  await fs.writeFile(concatListPath, listContent);
+
+  return new Promise((resolve, reject) => {
+    ffmpeg()
+      .input(concatListPath)
+      .inputOptions(['-f concat', '-safe 0'])
+      .outputOptions(['-c:a libmp3lame', '-b:a 128k', '-ar 44100', '-ac 2'])
+      .on('error', (err) => {
+        console.error('FFmpeg concat error:', err);
+        reject(err);
+      })
+      .on('end', () => {
+        // Cleanup concat list file
+        fs.unlink(concatListPath).catch(() => {});
+        resolve();
+      })
+      .save(outputPath);
+  });
 }

@@ -1,75 +1,74 @@
 /**
  * FFmpeg configuration - platform-specific binary paths
  *
- * The installer packages don't export paths, so we manually construct them.
- * For production deployment on different platforms, update the paths below.
+ * Dynamically selects the correct FFmpeg binaries based on the platform.
  */
 
 import path from 'path';
+import os from 'os';
 
-// Manually construct the path to the FFmpeg binary
-// Current platform: Windows x64
-const ffmpegPath = path.join(
-  process.cwd(),
-  'node_modules',
-  '@ffmpeg-installer',
-  'win32-x64',
-  'ffmpeg.exe'
-);
+// Detect platform
+const platform = os.platform();
+const arch = os.arch();
 
-// Manually construct the path to the FFprobe binary
-const ffprobePath = path.join(
-  process.cwd(),
-  'node_modules',
-  '@ffprobe-installer',
-  'win32-x64',
-  'ffprobe.exe'
-);
+let ffmpegPath = '';
+let ffprobePath = '';
+
+// Manually construct paths based on platform
+// This avoids require() calls that Next.js can't resolve at build time
+if (platform === 'win32') {
+  // Windows paths
+  ffmpegPath = path.join(
+    process.cwd(),
+    'node_modules',
+    '@ffmpeg-installer',
+    'win32-x64',
+    'ffmpeg.exe'
+  );
+  ffprobePath = path.join(
+    process.cwd(),
+    'node_modules',
+    '@ffprobe-installer',
+    'win32-x64',
+    'ffprobe.exe'
+  );
+} else if (platform === 'linux') {
+  // Linux paths (Vercel)
+  ffmpegPath = path.join(
+    process.cwd(),
+    'node_modules',
+    '@ffmpeg-installer',
+    'linux-x64',
+    'ffmpeg'
+  );
+  ffprobePath = path.join(
+    process.cwd(),
+    'node_modules',
+    '@ffprobe-installer',
+    'linux-x64',
+    'ffprobe'
+  );
+} else if (platform === 'darwin') {
+  // macOS paths (if needed in the future)
+  ffmpegPath = path.join(
+    process.cwd(),
+    'node_modules',
+    '@ffmpeg-installer',
+    'darwin-x64',
+    'ffmpeg'
+  );
+  ffprobePath = path.join(
+    process.cwd(),
+    'node_modules',
+    '@ffprobe-installer',
+    'darwin-x64',
+    'ffprobe'
+  );
+} else {
+  // Fallback to system PATH
+  console.warn(`Unsupported platform: ${platform}-${arch}, falling back to system FFmpeg`);
+  ffmpegPath = 'ffmpeg';
+  ffprobePath = 'ffprobe';
+}
 
 export { ffmpegPath, ffprobePath };
-
-/**
- * For production on different platforms:
- *
- * Linux (install @ffmpeg-installer/linux-x64 and @ffprobe-installer/linux-x64):
- * const ffmpegPath = path.join(process.cwd(), 'node_modules', '@ffmpeg-installer', 'linux-x64', 'ffmpeg');
- * const ffprobePath = path.join(process.cwd(), 'node_modules', '@ffprobe-installer', 'linux-x64', 'ffprobe');
- *
- * macOS Intel (install @ffmpeg-installer/darwin-x64 and @ffprobe-installer/darwin-x64):
- * const ffmpegPath = path.join(process.cwd(), 'node_modules', '@ffmpeg-installer', 'darwin-x64', 'ffmpeg');
- * const ffprobePath = path.join(process.cwd(), 'node_modules', '@ffprobe-installer', 'darwin-x64', 'ffprobe');
- *
- * macOS Apple Silicon (install @ffmpeg-installer/darwin-arm64 and @ffprobe-installer/darwin-arm64):
- * const ffmpegPath = path.join(process.cwd(), 'node_modules', '@ffmpeg-installer', 'darwin-arm64', 'ffmpeg');
- * const ffprobePath = path.join(process.cwd(), 'node_modules', '@ffprobe-installer', 'darwin-arm64', 'ffprobe');
- */
-
-/**
- * Alternative: Dynamic platform detection (requires installing all platform packages)
- *
- * Uncomment this section and install all platform-specific packages if you need
- * cross-platform compatibility in development:
- *
- * export function getFfmpegPath(): string {
- *   const platform = process.platform;
- *   const arch = process.arch;
- *
- *   try {
- *     if (platform === 'win32' && arch === 'x64') {
- *       return require('@ffmpeg-installer/win32-x64').path;
- *     } else if (platform === 'linux' && arch === 'x64') {
- *       return require('@ffmpeg-installer/linux-x64').path;
- *     } else if (platform === 'darwin' && arch === 'x64') {
- *       return require('@ffmpeg-installer/darwin-x64').path;
- *     } else if (platform === 'darwin' && arch === 'arm64') {
- *       return require('@ffmpeg-installer/darwin-arm64').path;
- *     } else {
- *       throw new Error(`Unsupported platform: ${platform}-${arch}`);
- *     }
- *   } catch (error) {
- *     throw new Error(`FFmpeg binary not installed for platform: ${platform}-${arch}`);
- *   }
- * }
- *
- * export const ffmpegPath = getFfmpegPath();
- */

@@ -143,9 +143,9 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   const priceId = item.plan.id;
   
   let subscriptionTier = null;
-  if (priceId.startsWith('price_1SU')) {
+  if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID) {
     subscriptionTier = 'Pro';
-  } else if (priceId.startsWith('price_1SV')) {
+  } else if (priceId === process.env.NEXT_PUBLIC_STRIPE_ULTRA_PRICE_ID) {
     subscriptionTier = 'Ultra';
   }
   
@@ -160,6 +160,11 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     : null;
 
   // Update subscription details
+  // IMPORTANT: We do NOT reset monthly_generated_slideshows here
+  // - On mid-cycle upgrades (Pro→Ultra): current_period_start stays the same, 
+  //   so usage count persists (user gets higher limit without reset)
+  // - On billing renewals: current_period_start changes, triggering reset 
+  //   in generate-slideshow route when user next generates
   const { error } = await supabaseAdmin
     .from('main_table')
     .update({

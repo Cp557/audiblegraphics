@@ -19,17 +19,17 @@ import { Presentation } from "@/lib/supabase/presentations"
 
 const data = {
   defaultUser: {
-    name: "Audible Slides",
-    email: "hello@audibleslides.com",
+    name: "AudibleGraphics",
+    email: "hello@audiblegraphics.com",
     avatar: "/avatars/shadcn.jpg",
   },
   brand: {
-    title: "Audible Slides",
+    title: "AudibleGraphics",
     logoSrc: "/logo.svg",
   },
   navMain: [
     {
-      title: "New Slideshow",
+      title: "New Infographic",
       url: "/dashboard",
       icon: SquarePlus,
     },

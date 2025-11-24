@@ -45,7 +45,7 @@ export default function ManageSubscriptionButton({
     <div className="max-w-sm mx-auto -mt-4">
       <Card className="border-2 border-gray-200">
         <CardHeader className="flex items-center justify-center p-0 gap-0">
-          <Badge> AudibleSlides Pro </Badge>
+          <Badge> AudibleGraphics Pro </Badge>
         </CardHeader>
         <CardContent className="space-y-3 pt-0 text-center">
           {/* Key details */}

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getPresentation } from '@/lib/supabase/presentations';
 import { createVideoJob } from '@/lib/video/job-store';
 import { startVideoGeneration } from '@/lib/video/job-manager';
+import { Slide } from '@/lib/supabase/presentations'; // Ensure this type exists or is compatible
 
 export const maxDuration = 300; // 5 minutes max for video generation
 
@@ -25,35 +26,57 @@ export async function POST(
     // Get presentation ID from params
     const { id: presentationId } = await params;
 
-    // Get options from request body
-    let darkMode = false;
-    try {
-      const body = await request.json();
-      darkMode = !!body.darkMode;
-    } catch (e) {
-      // Ignore JSON parse errors, default to false
-    }
-
-    // Fetch presentation with slides (RLS check included)
+    // Fetch presentation
+    // Note: getPresentation currently returns just the presentation row, not joined slides.
+    // If we are in "infographic mode", the presentation itself IS the content.
     const presentation = await getPresentation(presentationId, user.id);
 
     if (!presentation) {
       return NextResponse.json({ error: 'Presentation not found' }, { status: 404 });
     }
 
-    // Check if presentation has slides
-    if (!presentation.slides || presentation.slides.length === 0) {
+    // Determine if we have content to generate video from.
+    // Case A: Infographic mode (content on presentation object)
+    const hasInfographicContent = !!(presentation.image_url && presentation.audio_url);
+    
+    // Case B: Slideshow mode (content in slides array - not currently fetched by getPresentation but we'll handle the logic)
+    // If getPresentation is updated to return slides later, this check handles it.
+    // For now, we'll cast to any to check for slides property safely
+    const slides = (presentation as any).slides || [];
+    const hasSlides = slides.length > 0;
+
+    if (!hasInfographicContent && !hasSlides) {
       return NextResponse.json(
-        { error: 'Presentation has no slides' },
+        { error: 'Presentation has no content (image/audio or slides)' },
         { status: 400 }
       );
+    }
+
+    // Construct a normalized "slides" array for the video generator
+    let presentationWithSlides = { ...presentation } as any;
+    
+    if (hasSlides) {
+      presentationWithSlides.slides = slides;
+    } else {
+      // Create a synthetic slide from the presentation data
+      const syntheticSlide: Slide = {
+        id: 'synthetic-1',
+        presentation_id: presentation.id,
+        slide_number: 1,
+        slide_title: presentation.title,
+        slide_content: presentation.speaker_notes || '', // Use notes as content for the frame text
+        image_url: presentation.image_url,
+        audio_url: presentation.audio_url,
+        created_at: presentation.created_at
+      };
+      presentationWithSlides.slides = [syntheticSlide];
     }
 
     // Create video job (in-memory, no database)
     const job = createVideoJob(presentationId, user.id);
 
     // Start video generation in background (fire and forget)
-    startVideoGeneration(job.id, presentation, { darkMode });
+    startVideoGeneration(job.id, presentationWithSlides);
 
     // Return job ID immediately
     return NextResponse.json(

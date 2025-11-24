@@ -21,6 +21,21 @@ export interface Presentation {
   created_at: string;
 }
 
+export interface Slide {
+  id: string;
+  presentation_id: string;
+  slide_number: number;
+  slide_title: string;
+  slide_content: string;
+  image_url: string | null;
+  audio_url: string | null;
+  created_at: string;
+}
+
+export interface PresentationWithSlides extends Presentation {
+  slides: Slide[];
+}
+
 /**
  * Create a new presentation entry
  * @param userId - User ID
@@ -121,6 +136,7 @@ export async function getUserPresentations(
 /**
  * Delete a presentation
  * @param presentationId - Presentation ID
+ * @param userId - User ID (for security check)
  * @param userId - User ID (for security check)
  */
 export async function deletePresentation(

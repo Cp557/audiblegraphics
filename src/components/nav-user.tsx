@@ -168,25 +168,7 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              {user.subscription_tier === "Pro" ? (
-                <>
-                  <DropdownMenuItem
-                    onSelect={handleManageSubscription}
-                    disabled={isManagingSubscription}
-                    className="cursor-pointer"
-                  >
-                    <CreditCard />
-                    {isManagingSubscription ? "Loading..." : "Manage Subscription"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={handleUpgrade}
-                    className="cursor-pointer"
-                  >
-                    <Sparkles />
-                    Upgrade to Ultra
-                  </DropdownMenuItem>
-                </>
-              ) : user.subscription_tier === "Ultra" ? (
+              {user.subscription_tier === "Pro" || user.subscription_tier === "Ultra" ? (
                 <DropdownMenuItem
                   onSelect={handleManageSubscription}
                   disabled={isManagingSubscription}

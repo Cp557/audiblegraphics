@@ -13,6 +13,7 @@ interface PricingCardsProps {
 export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }: PricingCardsProps) {
   const [isUpgradingPro, setIsUpgradingPro] = useState(false);
   const [isUpgradingUltra, setIsUpgradingUltra] = useState(false);
+  const [isManagingSubscription, setIsManagingSubscription] = useState(false);
 
   const handleUpgrade = async (plan: 'pro' | 'ultra') => {
     const priceId = plan === 'pro'
@@ -51,6 +52,34 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
     }
   };
 
+  const handleManageSubscription = async () => {
+    if (isManagingSubscription) {
+      return;
+    }
+
+    setIsManagingSubscription(true);
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error(data.error);
+        return;
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsManagingSubscription(false);
+    }
+  };
+
   const handleHover = (e: React.MouseEvent<HTMLDivElement>, entering: boolean) => {
     const el = e.currentTarget as HTMLDivElement;
     if (entering) {
@@ -71,28 +100,57 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
         onMouseEnter={(e) => handleHover(e, true)}
         onMouseLeave={(e) => handleHover(e, false)}
       >
-        {subscriptionTier === 'Pro' && (
-          <div className="absolute top-0 right-0 bg-[#4A90E2] text-white text-xs font-bold px-3 py-1 rounded-bl-lg shadow-md z-10">
-            Current Plan
-          </div>
-        )}
+        <div 
+          className="absolute top-0 right-0 bg-[#4A90E2] text-white text-xs font-bold px-3 py-1 rounded-bl-lg shadow-md z-10 transition-opacity duration-300"
+          style={{ 
+            opacity: subscriptionTier === 'Pro' ? 1 : 0,
+            pointerEvents: subscriptionTier === 'Pro' ? 'auto' : 'none'
+          }}
+        >
+          Current Plan
+        </div>
         <CardHeader className="text-center space-y-4">
           <div>
             <CardTitle className="text-2xl mb-2">Pro Plan</CardTitle>
-            <p className="text-4xl font-bold text-[#4A90E2]">$9.99</p>
+            <p className="text-4xl font-bold text-[#4A90E2]">$14.99</p>
             <p className="text-sm text-gray-600">per month</p>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <ul className="text-sm text-gray-600 space-y-2">
-            <li>✔︎ 100 slides per month</li>
-            <li>✔︎ High-quality audio</li>
-            <li>✔︎ Multiple voices</li>
-            <li>✔︎ Priority support</li>
+            <li>✔︎ 50 infographics per month</li>
+            <li>✔︎ High-quality images & audio</li>
+            <li>✔︎ Multiple voice options</li>
+            <li>✔︎ Download as video</li>
             <li>✔︎ Cancel anytime</li>
           </ul>
-          {isLoggedIn && !subscriptionTier && (
+          <div 
+            className="transition-all duration-300"
+            style={{
+              opacity: (isLoggedIn && subscriptionTier === 'Pro') ? 1 : 0,
+              height: (isLoggedIn && subscriptionTier === 'Pro') ? 'auto' : '0',
+              overflow: 'hidden',
+              marginTop: (isLoggedIn && subscriptionTier === 'Pro') ? '1rem' : '0'
+            }}
+          >
+            <Button
+              onClick={handleManageSubscription}
+              disabled={isManagingSubscription}
+              className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
+            >
+              {isManagingSubscription ? "Loading..." : "Manage Subscription"}
+            </Button>
+          </div>
+          <div 
+            className="transition-all duration-300"
+            style={{
+              opacity: (isLoggedIn && !subscriptionTier) ? 1 : 0,
+              height: (isLoggedIn && !subscriptionTier) ? 'auto' : '0',
+              overflow: 'hidden',
+              marginTop: (isLoggedIn && !subscriptionTier) ? '1rem' : '0'
+            }}
+          >
             <Button
               onClick={() => handleUpgrade('pro')}
               disabled={isUpgradingPro}
@@ -100,7 +158,7 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
             >
               {isUpgradingPro ? "Loading..." : "Upgrade to Pro"}
             </Button>
-          )}
+          </div>
         </CardContent>
       </Card>
 
@@ -110,29 +168,57 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
         onMouseEnter={(e) => handleHover(e, true)}
         onMouseLeave={(e) => handleHover(e, false)}
       >
-        {subscriptionTier === 'Ultra' && (
-          <div className="absolute top-0 right-0 bg-[#4A90E2] text-white text-xs font-bold px-3 py-1 rounded-bl-lg shadow-md z-10">
-            Current Plan
-          </div>
-        )}
+        <div 
+          className="absolute top-0 right-0 bg-[#4A90E2] text-white text-xs font-bold px-3 py-1 rounded-bl-lg shadow-md z-10 transition-opacity duration-300"
+          style={{ 
+            opacity: subscriptionTier === 'Ultra' ? 1 : 0,
+            pointerEvents: subscriptionTier === 'Ultra' ? 'auto' : 'none'
+          }}
+        >
+          Current Plan
+        </div>
         <CardHeader className="text-center space-y-4">
           <div>
             <CardTitle className="text-2xl mb-2">Ultra Plan</CardTitle>
-            <p className="text-4xl font-bold text-[#4A90E2]">$19.99</p>
+            <p className="text-4xl font-bold text-[#4A90E2]">$24.99</p>
             <p className="text-sm text-gray-600">per month</p>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <ul className="text-sm text-gray-600 space-y-2">
-            <li>✔︎ Unlimited slides</li>
-            <li>✔︎ Premium audio quality</li>
-            <li>✔︎ All voice options</li>
-            <li>✔︎ Priority support</li>
-            <li>✔︎ Advanced features</li>
+            <li>✔︎ 100 infographics per month</li>
+            <li>✔︎ High-quality images & audio</li>
+            <li>✔︎ Multiple voice options</li>
+            <li>✔︎ Download as video</li>
             <li>✔︎ Cancel anytime</li>
           </ul>
-          {isLoggedIn && subscriptionTier !== 'Ultra' && (
+          <div 
+            className="transition-all duration-300"
+            style={{
+              opacity: (isLoggedIn && subscriptionTier === 'Pro') ? 1 : 0,
+              height: (isLoggedIn && subscriptionTier === 'Pro') ? 'auto' : '0',
+              overflow: 'hidden',
+              marginTop: (isLoggedIn && subscriptionTier === 'Pro') ? '1rem' : '0'
+            }}
+          >
+            <Button
+              onClick={handleManageSubscription}
+              disabled={isManagingSubscription}
+              className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
+            >
+              {isManagingSubscription ? "Loading..." : "Manage Subscription"}
+            </Button>
+          </div>
+          <div 
+            className="transition-all duration-300"
+            style={{
+              opacity: (isLoggedIn && !subscriptionTier) ? 1 : 0,
+              height: (isLoggedIn && !subscriptionTier) ? 'auto' : '0',
+              overflow: 'hidden',
+              marginTop: (isLoggedIn && !subscriptionTier) ? '1rem' : '0'
+            }}
+          >
             <Button
               onClick={() => handleUpgrade('ultra')}
               disabled={isUpgradingUltra}
@@ -140,7 +226,7 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
             >
               {isUpgradingUltra ? "Loading..." : "Upgrade to Ultra"}
             </Button>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

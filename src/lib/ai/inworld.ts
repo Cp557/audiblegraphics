@@ -30,26 +30,58 @@ export async function generateInworldAudio(
 
   const requestBody = {
     text: narration,
-    voice_id: options.voice || "Craig", // Default to Dennis as per user snippet
+    voice_id: options.voice || "Craig", // Default to Craig
     audio_config: {
-      audio_encoding: "MP3", // Inworld seems to default to MP3 based on snippet
+      audio_encoding: "MP3",
       speaking_rate: 1,
-      ...options
     },
     temperature: 1.1,
-    model_id: options.model || "inworld-tts-1"
+    model_id: options.model || "inworld-tts-1-max"
   };
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
-  });
+  // Retry logic for 429 Rate Limits
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  const BASE_DELAY = 1000; // 1 second
 
-  if (!response.ok) {
+  while (true) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      
+      if (!result.audioContent) {
+        throw new Error('No audio content received from Inworld');
+      }
+
+      const audioBuffer = Buffer.from(result.audioContent, 'base64');
+      
+      // Save as MP3 directly (browsers support this better than WAV)
+      // Change output extension if needed
+      const outputPathMp3 = outputPath.replace('.wav', '.mp3');
+      await writeFile(outputPathMp3, audioBuffer);
+      
+      console.log(`Successfully generated Inworld TTS: ${outputPathMp3}`);
+      return outputPathMp3;
+    }
+
+    // Handle 429 Too Many Requests
+    if (response.status === 429 && retries < MAX_RETRIES) {
+      const delay = BASE_DELAY * Math.pow(2, retries); // Exponential backoff: 1s, 2s, 4s
+      console.warn(`Inworld Rate Limit hit (429). Retrying in ${delay}ms... (Attempt ${retries + 1}/${MAX_RETRIES})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      retries++;
+      continue;
+    }
+
+    // Handle other errors or max retries exceeded
     let errorDetails = '';
     try {
       const errorText = await response.text();
@@ -59,21 +91,4 @@ export async function generateInworldAudio(
     }
     throw new Error(`Inworld TTS API error! status: ${response.status}${errorDetails}`);
   }
-
-  const result = await response.json();
-  
-  if (!result.audioContent) {
-    throw new Error('No audio content received from Inworld');
-  }
-
-  const audioBuffer = Buffer.from(result.audioContent, 'base64');
-  
-  // Since Inworld returns MP3 (based on snippet), and our system might expect WAV (Linear16),
-  // we save what we get. The FFmpeg pipeline later should handle MP3 input fine.
-  // Ideally we would transcode here if strict WAV requirement exists, 
-  // but for now we save directly.
-  await writeFile(outputPath, audioBuffer);
-  
-  console.log(`Successfully generated Inworld TTS: ${outputPath}`);
-  return outputPath;
 }

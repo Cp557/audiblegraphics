@@ -16,7 +16,9 @@ const nextConfig: NextConfig = {
   // Ensure server components don't bundle these packages
   serverExternalPackages: [
     '@ffmpeg-installer/win32-x64',
+    '@ffmpeg-installer/linux-x64',
     '@ffprobe-installer/win32-x64',
+    '@ffprobe-installer/linux-x64',
     'fluent-ffmpeg',
     'sharp',
   ],

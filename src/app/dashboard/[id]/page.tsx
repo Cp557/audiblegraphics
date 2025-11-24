@@ -11,6 +11,7 @@ import {
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
+import { DownloadVideoButton } from '@/components/DownloadVideoButton';
 
 export default async function PresentationPage({
   params,
@@ -77,8 +78,7 @@ export default async function PresentationPage({
               </BreadcrumbList>
             </Breadcrumb>
             <div className="ml-auto">
-              {/* Video download disabled for now */}
-              {/* <DownloadVideoButton presentationId={presentation.id} /> */}
+              <DownloadVideoButton presentationId={presentation.id} />
             </div>
           </div>
         </header>

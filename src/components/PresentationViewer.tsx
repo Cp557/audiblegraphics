@@ -18,7 +18,7 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const { autoplayAudio, darkMode } = useSettings();
+  const { autoplayAudio } = useSettings();
 
   const { image_url, audio_url, speaker_notes, title } = presentation;
 
@@ -93,7 +93,7 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
         
         {/* Infographic Image Column */}
         <div className="relative w-full flex-1 min-h-0 flex justify-center">
-            <div className={`relative h-full w-auto aspect-[16/9] rounded-xl overflow-hidden border shadow-lg ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className="relative h-full w-auto aspect-[16/9] rounded-xl overflow-hidden border shadow-lg border-gray-200">
             {image_url ? (
               <Image
                 src={image_url}
@@ -115,7 +115,7 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
         <div className="w-full max-w-[800px] mx-auto shrink-0">
           
           {/* Audio Player Card */}
-          <div className={`p-6 rounded-xl border shadow-sm ${darkMode ? 'bg-[#333] border-gray-700' : 'bg-white'}`}>
+          <div className="p-6 rounded-xl border shadow-sm bg-white">
             {audio_url ? (
               <div className="flex flex-col gap-2">
                 <audio

@@ -4,6 +4,7 @@
  */
 
 import path from 'path';
+import os from 'os';
 import { mkdir } from 'fs/promises';
 import { validateTopic, generateInfographicContent, generateImage } from './gemini';
 import { generateAudioFromSections } from './audio-generator';
@@ -30,7 +31,7 @@ export async function generateInfographicWithAudio(
 ): Promise<InfographicResult> {
   const {
     topic,
-    outputDir = 'public/generated-infographics',
+    outputDir = path.join(os.tmpdir(), 'audible-slides-gen'),
     userId,
     presentationId,
     voice
@@ -54,12 +55,14 @@ export async function generateInfographicWithAudio(
 
   // Step 3: Create output directory
   const safeTopic = sanitizeTopic(topic);
-  const topicDir = path.join(process.cwd(), outputDir, safeTopic);
+  const topicDir = path.isAbsolute(outputDir)
+    ? path.join(outputDir, safeTopic)
+    : path.join(process.cwd(), outputDir, safeTopic);
   await mkdir(topicDir, { recursive: true });
   console.log(`✓ Created output directory: ${topicDir}`);
 
   // Step 4: Generate Assets Parallel
-  const audioPath = path.join(topicDir, 'narration.wav');
+  const audioPath = path.join(topicDir, 'narration.mp3');
   const imagePath = path.join(topicDir, 'infographic.jpg');
 
   console.log('\n--- Generating Assets ---');

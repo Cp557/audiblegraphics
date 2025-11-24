@@ -16,8 +16,8 @@ import {
 /**
  * Initialize Gemini client with API key
  */
-export function createGeminiClient() {
-  const apiKey = process.env.GEMINI_API_KEY;
+export function createGeminiClient(specificKey?: string) {
+  const apiKey = specificKey || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is not set');
   }
@@ -121,14 +121,22 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
     - Each section MUST be under 1500 characters to allow for audio generation.
     - Return the result as a JSON object with a single key "script_sections" containing an array of strings.
 
+    VOICE ENHANCEMENT:
+    You can use special punctuation to improve the narration quality when necessary (but don't overuse):
+    - Use ! for emphatic or excited statements (makes the voice more enthusiastic)
+    - Use *word* to emphasize specific words (e.g., "This is *really* important")
+    - Use — (em-dash) for natural pauses or breaks in thought
+    - Always use proper punctuation at the end of sentences
+    Apply these sparingly and only when they genuinely enhance the narration or clarity.
+
     Example format:
     \`\`\`json
     {
       "script_sections": [
-        "Today we are going to talk about the history of Rome...",
-        "The Roman Republic was established in 509 BC...",
-        "However, internal strife and civil wars...",
-        "In conclusion..."
+        "Today we are going to talk about the *fascinating* history of Rome!",
+        "The Roman Republic was established in 509 BC — a pivotal moment in history.",
+        "However, internal strife and civil wars eventually weakened the republic.",
+        "In conclusion, Rome's legacy continues to influence us today."
       ]
     }
     \`\`\`
@@ -160,12 +168,13 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
     const sections = scriptData.script_sections || [];
     if (sections.length === 0) throw new Error('Generated script contains no sections');
 
-    // Combine sections for full notes
+    // Return sections as-is without adding artificial pauses
+    // (Pauses are now handled by inserting silence audio files between chunks)
     const speaker_notes = sections.join('\n\n');
 
     // 2. Construct Image Prompt directly from the notes
     const image_prompt = `
-      Create a detailed, visually rich, and comprehensive INFOGRAPHIC based on the following narration script.
+      Create an engaging infographic based on the following narration script.
       
       SCRIPT:
       "${speaker_notes}"
@@ -175,7 +184,7 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
       - Use a clean, modern, vector-art or flat-design style.
       - Organize the layout logically to flow with the narrative.
       - Use professional color palettes and clear iconography.
-      - Only include lables. Do NOT inlcude headers, titles, or body text.
+      - Try to use minimal text and rely on visuals and icons. If you do include text, use brief lables. Do NOT inlcude any body text.
     `.trim();
 
     return {
@@ -203,7 +212,7 @@ export async function generateImage(
 
   try {
     const config = {
-      responseModalities: ['IMAGE', 'TEXT'] as any, // Type assertion might be needed depending on SDK version
+      responseModalities: ['IMAGE', 'TEXT'] as any, 
       imageConfig: {
         aspectRatio: '16:9',
         imageSize: '1K',
@@ -211,6 +220,8 @@ export async function generateImage(
     };
     
     // Using the user-specified model
+    // gemini-3-pro-image-preview
+    // gemini-2.5-flash-image
     const model = 'gemini-3-pro-image-preview';
 
     const contents = [
@@ -266,8 +277,60 @@ export async function generateImage(
       stack: error?.stack,
     });
 
+    const isRateLimit = error?.status === 429 || error?.status === 500 || error?.code === 429 || error?.code === 500;
+
+    // Try backup key if available and it is a rate limit/resource exhausted error
+    if (isRateLimit && process.env.GEMINI_API_KEY2) {
+      console.warn('Primary Gemini key exhausted. Retrying with GEMINI_API_KEY2...');
+      try {
+        const backupClient = createGeminiClient(process.env.GEMINI_API_KEY2);
+        
+        // Re-run generation logic with backup client
+        const config = {
+          responseModalities: ['IMAGE', 'TEXT'] as any, 
+          imageConfig: {
+            aspectRatio: '16:9',
+            imageSize: '1K',
+          },
+        };
+        const model = 'gemini-3-pro-image-preview';
+        const contents = [{ role: 'user' as const, parts: [{ text: enhancedPrompt }] }];
+
+        const response = await backupClient.models.generateContentStream({
+          model,
+          config,
+          contents,
+        });
+
+        let imageBuffer: Buffer | null = null;
+        for await (const chunk of response) {
+          if (!chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData) continue;
+          const inlineData = chunk.candidates[0].content.parts[0].inlineData;
+          if (inlineData?.data) {
+            imageBuffer = Buffer.from(inlineData.data, 'base64');
+          }
+        }
+
+        if (imageBuffer) {
+          // Ensure directory exists (it might already exist from previous attempt, but safe to check)
+          const dir = path.dirname(outputPath);
+          // Note: mkdir is not imported here, but usually the caller ensures dir exists or writeFile handles it if dir exists. 
+          // In the main block, it does `const dir = path.dirname(outputPath);` but doesn't call mkdir. 
+          // Actually, the previous block didn't call mkdir either, it just did writeFile. 
+          // Wait, the previous block did `const dir = path.dirname(outputPath);` but didn't use `dir`. 
+          // The `mkdir` is done in the orchestrator `generateInfographicWithAudio`.
+          await writeFile(outputPath, imageBuffer);
+          console.log(`Image saved to: ${outputPath} (using backup key)`);
+          return outputPath;
+        }
+      } catch (backupError) {
+        console.error('Backup key also failed or exhausted:', backupError);
+        // Continue to OpenAI fallback
+      }
+    }
+
     // Fallback
-    if (error?.status === 429 || error?.status === 500 || error?.code === 429 || error?.code === 500) {
+    if (isRateLimit) {
       console.warn(`Gemini generateImage failed (${error.status || error.code}), switching to OpenAI...`);
       return generateImageOpenAI(enhancedPrompt, outputPath, options);
     }

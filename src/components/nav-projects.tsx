@@ -158,7 +158,7 @@ export function NavProjects({
   return (
     <>
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-        <SidebarGroupLabel>Slideshows</SidebarGroupLabel>
+        <SidebarGroupLabel>Infographics</SidebarGroupLabel>
         <SidebarMenu>
           {projects.map((item) => (
             <SidebarMenuItem key={item.id}>
@@ -206,7 +206,7 @@ export function NavProjects({
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename Slideshow</DialogTitle>
+            <DialogTitle>Rename Infographic</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -219,7 +219,7 @@ export function NavProjects({
                     handleRenameSubmit()
                   }
                 }}
-                placeholder="Enter slideshow title"
+                placeholder="Enter infographic title"
                 disabled={isLoading}
               />
             </div>
@@ -247,7 +247,7 @@ export function NavProjects({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="sr-only">Delete Slideshow</AlertDialogTitle>
+            <AlertDialogTitle className="sr-only">Delete Infographic</AlertDialogTitle>
             <AlertDialogDescription className="text-base text-foreground">
               Are you sure you want to delete &quot;{selectedProject?.name}&quot;?
               <br />
