@@ -10,16 +10,15 @@ interface DownloadVideoButtonProps {
 
 type JobStatus = 'idle' | 'pending' | 'processing' | 'completed' | 'failed';
 
-interface JobStatusResponse {
-  jobId: string;
-  status: JobStatus;
-  progress: number;
+interface VideoStatusResponse {
+  status: string;
+  progress?: number;
   videoUrl?: string;
   error?: string;
 }
 
 interface VideoStartResponse {
-  jobId?: string;
+  presentationId?: string;
   status: string;
   videoUrl?: string;
   message?: string;
@@ -31,7 +30,6 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
   const [status, setStatus] = useState<JobStatus>('idle');
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [jobId, setJobId] = useState<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup polling on unmount
@@ -71,7 +69,6 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
       setTimeout(() => {
         setStatus('idle');
         setProgress(0);
-        setJobId(null);
       }, 2000);
     } catch (downloadError) {
       console.error('Error downloading video file:', downloadError);
@@ -84,25 +81,26 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
     }
   };
 
-  // Start polling for job status
-  const startPolling = (jobId: string) => {
+  // Start polling for video status (polls the database via API)
+  const startPolling = () => {
     // Clear any existing polling
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
     }
 
-    // Poll every 2 seconds
+    // Poll every 3 seconds (database-backed, so slightly longer interval is fine)
     pollingIntervalRef.current = setInterval(async () => {
       try {
-        const response = await fetch(`/api/video-jobs/${jobId}`);
+        // Poll the presentation's video status endpoint
+        const response = await fetch(`/api/presentations/${presentationId}/video`);
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch job status');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch video status');
         }
 
-        const data: JobStatusResponse = await response.json();
-        setStatus(data.status);
-        setProgress(data.progress);
-
+        const data: VideoStatusResponse = await response.json();
+        
         if (data.status === 'completed' && data.videoUrl) {
           // Stop polling
           if (pollingIntervalRef.current) {
@@ -110,35 +108,38 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
             pollingIntervalRef.current = null;
           }
 
+          setStatus('completed');
+          setProgress(100);
+
           // Download the video
           await downloadVideo(data.videoUrl);
-        } else if (data.status === 'failed') {
-          // Stop polling
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
+        } else if (data.status === 'processing') {
+          setStatus('processing');
+          setProgress(data.progress || 50);
+        }
+      } catch (err) {
+        console.error('Error polling video status:', err);
+        // Don't stop polling on transient errors, just log them
+        // Only stop after many failures (handled by timeout below)
+      }
+    }, 3000);
 
-          setError(data.error || 'Video generation failed');
-
-          // Reset to idle after showing error
+    // Timeout after 5 minutes (video generation shouldn't take longer)
+    setTimeout(() => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        
+        if (status === 'processing' || status === 'pending') {
+          setStatus('failed');
+          setError('Video generation timed out');
           setTimeout(() => {
             setStatus('idle');
-            setProgress(0);
-            setJobId(null);
             setError(null);
           }, 5000);
         }
-      } catch (err) {
-        console.error('Error polling job status:', err);
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-        setStatus('failed');
-        setError('Failed to check video status');
       }
-    }, 2000);
+    }, 5 * 60 * 1000);
   };
 
   const handleDownload = async () => {
@@ -167,13 +168,10 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
         return;
       }
 
-      // Video is being generated, start polling
-      if (data.jobId) {
-        setJobId(data.jobId);
-        startPolling(data.jobId);
-      } else {
-        throw new Error('No job ID returned');
-      }
+      // Video is being generated, start polling the database
+      setStatus('processing');
+      startPolling();
+      
     } catch (err) {
       console.error('Error starting video generation:', err);
       setStatus('failed');

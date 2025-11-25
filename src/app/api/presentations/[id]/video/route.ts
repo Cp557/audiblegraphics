@@ -7,6 +7,64 @@ import { Slide } from '@/lib/supabase/presentations';
 
 export const maxDuration = 300; // 5 minutes max for video generation
 
+/**
+ * GET - Check if video exists for a presentation (poll endpoint)
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Get authenticated user
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get presentation ID from params
+    const { id: presentationId } = await params;
+
+    // Fetch presentation to check video_url
+    const presentation = await getPresentation(presentationId, user.id);
+
+    if (!presentation) {
+      return NextResponse.json({ error: 'Presentation not found' }, { status: 404 });
+    }
+
+    // Return current video status
+    if (presentation.video_url) {
+      return NextResponse.json({
+        status: 'completed',
+        progress: 100,
+        videoUrl: presentation.video_url,
+      });
+    } else {
+      // Video is still being generated
+      return NextResponse.json({
+        status: 'processing',
+        progress: 50, // We don't have exact progress, show indeterminate
+      });
+    }
+  } catch (error) {
+    console.error('Error checking video status:', error);
+    return NextResponse.json(
+      {
+        error: 'Failed to check video status',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST - Start video generation for a presentation
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -80,17 +138,17 @@ export async function POST(
       presentationWithSlides.slides = [syntheticSlide];
     }
 
-    // Create video job (in-memory for progress tracking)
+    // Create video job (in-memory for local progress tracking only)
     const job = createVideoJob(presentationId, user.id);
 
     // Start video generation in background (fire and forget)
     // Now also uploads to Supabase and saves URL to database
     startVideoGeneration(job.id, presentationWithSlides, user.id);
 
-    // Return job ID immediately
+    // Return presentation ID for polling (not job ID)
     return NextResponse.json(
       {
-        jobId: job.id,
+        presentationId: presentationId,
         status: 'pending',
         message: 'Video generation started',
       },
