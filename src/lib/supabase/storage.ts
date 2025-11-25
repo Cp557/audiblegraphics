@@ -190,96 +190,57 @@ export async function deletePresentation(
 ): Promise<void> {
   try {
     const folderPath = `${userId}/${presentationId}`;
-    console.log(`[Storage Cleanup] Starting deletion for folder: ${folderPath}`);
 
     // List all files in the presentation folder for images
-    const { data: imageFiles, error: imageListError } = await supabaseAdmin.storage
+    const { data: imageFiles } = await supabaseAdmin.storage
       .from('slide-images')
       .list(folderPath);
 
-    console.log(`[Storage Cleanup] slide-images list result:`, {
-      folderPath,
-      filesFound: imageFiles?.length ?? 0,
-      files: imageFiles?.map(f => f.name) ?? [],
-      listError: imageListError?.message ?? null
-    });
-
     // List all files in the presentation folder for audio
-    const { data: audioFiles, error: audioListError } = await supabaseAdmin.storage
+    const { data: audioFiles } = await supabaseAdmin.storage
       .from('slide-audio')
       .list(folderPath);
-
-    console.log(`[Storage Cleanup] slide-audio list result:`, {
-      folderPath,
-      filesFound: audioFiles?.length ?? 0,
-      files: audioFiles?.map(f => f.name) ?? [],
-      listError: audioListError?.message ?? null
-    });
 
     // Delete images
     if (imageFiles && imageFiles.length > 0) {
       const imagePaths = imageFiles.map((file) => `${folderPath}/${file.name}`);
-      console.log(`[Storage Cleanup] Attempting to delete images:`, imagePaths);
-      const { data: imageDeleteData, error: imageError } = await supabaseAdmin.storage
+      const { error: imageError } = await supabaseAdmin.storage
         .from('slide-images')
         .remove(imagePaths);
 
       if (imageError) {
         console.error('[Storage Cleanup] Error deleting images:', imageError);
-      } else {
-        console.log(`[Storage Cleanup] Successfully deleted images:`, imageDeleteData);
       }
-    } else {
-      console.log(`[Storage Cleanup] No images found to delete`);
     }
 
     // Delete audio files
     if (audioFiles && audioFiles.length > 0) {
       const audioPaths = audioFiles.map((file) => `${folderPath}/${file.name}`);
-      console.log(`[Storage Cleanup] Attempting to delete audio:`, audioPaths);
-      const { data: audioDeleteData, error: audioError } = await supabaseAdmin.storage
+      const { error: audioError } = await supabaseAdmin.storage
         .from('slide-audio')
         .remove(audioPaths);
 
       if (audioError) {
         console.error('[Storage Cleanup] Error deleting audio files:', audioError);
-      } else {
-        console.log(`[Storage Cleanup] Successfully deleted audio:`, audioDeleteData);
       }
-    } else {
-      console.log(`[Storage Cleanup] No audio files found to delete`);
     }
 
     // List all files in the presentation folder for videos
-    const { data: videoFiles, error: videoListError } = await supabaseAdmin.storage
+    const { data: videoFiles } = await supabaseAdmin.storage
       .from('presentation-videos')
       .list(folderPath);
-
-    console.log(`[Storage Cleanup] presentation-videos list result:`, {
-      folderPath,
-      filesFound: videoFiles?.length ?? 0,
-      files: videoFiles?.map(f => f.name) ?? [],
-      listError: videoListError?.message ?? null
-    });
 
     // Delete video files
     if (videoFiles && videoFiles.length > 0) {
       const videoPaths = videoFiles.map((file) => `${folderPath}/${file.name}`);
-      console.log(`[Storage Cleanup] Attempting to delete videos:`, videoPaths);
-      const { data: videoDeleteData, error: videoError } = await supabaseAdmin.storage
+      const { error: videoError } = await supabaseAdmin.storage
         .from('presentation-videos')
         .remove(videoPaths);
 
       if (videoError) {
         console.error('[Storage Cleanup] Error deleting video files:', videoError);
-      } else {
-        console.log(`[Storage Cleanup] Successfully deleted videos:`, videoDeleteData);
       }
-    } else {
-      console.log(`[Storage Cleanup] No video files found to delete`);
     }
-
-    console.log(`[Storage Cleanup] Completed deletion for folder: ${folderPath}`);
   } catch (error) {
     console.error('[Storage Cleanup] Error deleting presentation files:', error);
     throw error;
@@ -293,7 +254,6 @@ export async function deletePresentation(
 export async function cleanupTempFiles(directoryPath: string): Promise<void> {
   try {
     await rm(directoryPath, { recursive: true, force: true });
-    console.log(`✓ Cleaned up temp directory: ${directoryPath}`);
   } catch (error) {
     console.error(`Error cleaning up temp files at ${directoryPath}:`, error);
     // Don't throw - cleanup failure shouldn't break the flow

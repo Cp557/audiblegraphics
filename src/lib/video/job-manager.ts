@@ -38,58 +38,39 @@ export async function processVideoJob(
 ): Promise<void> {
   let outputPath: string | null = null;
 
-  console.log(`[VideoJob ${jobId}] Starting video generation for presentation ${presentation.id}`);
-  console.log(`[VideoJob ${jobId}] User: ${userId}`);
-  console.log(`[VideoJob ${jobId}] Slides count: ${presentation.slides?.length || 0}`);
-
   try {
     // Ensure temp directory exists
-    console.log(`[VideoJob ${jobId}] Creating temp directory...`);
     await ensureTempVideosDir();
-    console.log(`[VideoJob ${jobId}] Temp directory: ${getTempVideosDir()}`);
 
     // Create temp file for output video in our managed temp directory
     outputPath = path.join(getTempVideosDir(), `${jobId}.mp4`);
-    console.log(`[VideoJob ${jobId}] Output path: ${outputPath}`);
 
-    // Generate video with progress tracking
-    console.log(`[VideoJob ${jobId}] Starting FFmpeg video generation...`);
+    // Generate video
     await generatePresentationVideo(
       presentation.slides,
       outputPath,
-      (progress: VideoGenerationProgress) => {
-        console.log(`[VideoJob ${jobId}] Progress: ${progress.progress}% - ${progress.stage}`);
-      }
+      () => {} // Progress callback (no-op for production)
     );
-    console.log(`[VideoJob ${jobId}] FFmpeg video generation completed`);
 
     // Check if output file exists
     try {
-      const stats = await fs.stat(outputPath);
-      console.log(`[VideoJob ${jobId}] Output file size: ${stats.size} bytes`);
+      await fs.stat(outputPath);
     } catch (statError) {
       console.error(`[VideoJob ${jobId}] Output file does not exist!`, statError);
       throw new Error('Video file was not created');
     }
 
     // Upload video to Supabase storage
-    console.log(`[VideoJob ${jobId}] Uploading video to Supabase...`);
     const uploadResult = await uploadPresentationVideo(outputPath, userId, presentation.id);
-    console.log(`[VideoJob ${jobId}] Upload complete: ${uploadResult.path}`);
     
     // Save video URL to presentations table
-    console.log(`[VideoJob ${jobId}] Saving video URL to database...`);
     await updatePresentationVideoUrl(presentation.id, userId, uploadResult.url);
-    console.log(`[VideoJob ${jobId}] Video URL saved to database`);
 
     // Cleanup temp file now that it's uploaded
-    console.log(`[VideoJob ${jobId}] Cleaning up temp file...`);
     await cleanupFile(outputPath);
-    console.log(`[VideoJob ${jobId}] Job completed successfully!`);
     
   } catch (error) {
     console.error(`[VideoJob ${jobId}] FAILED:`, error);
-    console.error(`[VideoJob ${jobId}] Error stack:`, error instanceof Error ? error.stack : 'No stack');
 
     // Cleanup temp file if it exists
     if (outputPath) {
@@ -126,7 +107,6 @@ export async function cleanupOldVideos(maxAgeMinutes: number = 30): Promise<void
 
       if (now - stats.mtimeMs > maxAgeMs) {
         await cleanupFile(filePath);
-        console.log(`Cleaned up old video file: ${file}`);
       }
     }
   } catch (error) {

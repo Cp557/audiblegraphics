@@ -2,7 +2,7 @@
 
 **Last Updated:** November 21, 2025
 
-**AudibleSlides** ("we," "our," or "us") values your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services (the "Service").
+**AudibleGraphics** ("we," "our," or "us") values your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services (the "Service").
 
 By using the Service, you agree to the collection and use of information in accordance with this policy.
 
@@ -51,7 +51,7 @@ Depending on your location, you may have the right to:
 *   **Deletion:** Request that we erase your personal data ("Right to be Forgotten").
 *   **Restriction:** Request that we restrict the processing of your personal data.
 
-To exercise these rights, please contact us at **Contact@audibleslides.com**.
+To exercise these rights, please contact us at **Contact@audiblegraphics.com**.
 
 ## 7. Children's Privacy
 Our Service is not intended for use by children under the age of 13. We do not knowingly collect personally identifiable information from children under 13. If we become aware that we have collected Personal Data from a child under 13 without verification of parental consent, we take steps to remove that information from our servers.
@@ -61,5 +61,5 @@ We may update our Privacy Policy from time to time. We will notify you of any ch
 
 ## 9. Contact Us
 If you have any questions about this Privacy Policy, please contact us:
-*   By email: **Contact@audibleslides.com**
+*   By email: **Contact@audiblegraphics.com**
 

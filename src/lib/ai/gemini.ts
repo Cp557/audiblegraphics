@@ -257,15 +257,11 @@ export async function generateImage(
     }
 
     if (!imageBuffer) {
-      console.error('No image generated for prompt:', prompt);
+      console.error('No image generated for prompt');
       return '';
     }
 
-    // Ensure directory exists
-    const dir = path.dirname(outputPath);
     await writeFile(outputPath, imageBuffer);
-
-    console.log(`Image saved to: ${outputPath}`);
     return outputPath;
   } catch (error: any) {
     // Log full error details once so we can debug 500s from Gemini
@@ -312,15 +308,7 @@ export async function generateImage(
         }
 
         if (imageBuffer) {
-          // Ensure directory exists (it might already exist from previous attempt, but safe to check)
-          const dir = path.dirname(outputPath);
-          // Note: mkdir is not imported here, but usually the caller ensures dir exists or writeFile handles it if dir exists. 
-          // In the main block, it does `const dir = path.dirname(outputPath);` but doesn't call mkdir. 
-          // Actually, the previous block didn't call mkdir either, it just did writeFile. 
-          // Wait, the previous block did `const dir = path.dirname(outputPath);` but didn't use `dir`. 
-          // The `mkdir` is done in the orchestrator `generateInfographicWithAudio`.
           await writeFile(outputPath, imageBuffer);
-          console.log(`Image saved to: ${outputPath} (using backup key)`);
           return outputPath;
         }
       } catch (backupError) {

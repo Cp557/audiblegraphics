@@ -63,17 +63,3 @@ export function getSubscriptionWarning(userData?: SubscriptionData | null): stri
   return null;
 }
 
-/**
- * Gets the plan name
- */
-export function getPlanName(): string {
-  return 'Monthly';
-}
-
-/**
- * Gets formatted plan display with price
- */
-export function getPlanDisplayName(): string {
-  return 'Monthly ($11.99/mo)';
-}
-

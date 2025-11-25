@@ -25,7 +25,6 @@ export async function generateAudioFromSections(
   options: AudioOptions = {}
 ): Promise<string> {
   if (!sections || sections.length === 0) {
-    console.log('No sections provided, creating empty WAV file');
     await createEmptyWav(outputPath);
     return outputPath;
   }
@@ -35,13 +34,9 @@ export async function generateAudioFromSections(
   const chunkPaths: string[] = [];
 
   try {
-    console.log(`Generating audio for ${sections.length} sections...`);
-
     // Generate audio for each chunk in parallel
     const chunkPromises = sections.map(async (chunkText, i) => {
       const chunkPath = path.join(tempDir, `chunk_${i.toString().padStart(3, '0')}.mp3`);
-      
-      console.log(`[Chunk ${i+1}/${sections.length}] Generating (${chunkText.length} chars)...`);
       
       try {
         return await generateAudio(chunkText, chunkPath, options);
@@ -60,7 +55,6 @@ export async function generateAudioFromSections(
     }
 
     // Stitch chunks together
-    console.log(`Stitching ${chunkPaths.length} audio chunks...`);
     await stitchAudioFiles(chunkPaths, outputPath);
     
     return outputPath;
@@ -91,7 +85,6 @@ export async function generateAudio(
   options: AudioOptions = {}
 ): Promise<string> {
   if (!narration || narration.trim() === '') {
-    console.log('No narration provided, creating empty WAV file');
     await createEmptyWav(outputPath);
     return outputPath;
   }
@@ -106,14 +99,12 @@ export async function generateAudio(
 
   // Fallback to Deepgram
   try {
-    console.log('Attempting TTS with Deepgram...');
     return await generateDeepgramAudio(narration, outputPath, options);
   } catch (deepgramError) {
     console.error('Deepgram TTS also failed:', deepgramError);
   }
 
   // Final fallback: empty WAV
-  console.log('All TTS providers failed, creating empty WAV file');
   await createEmptyWav(outputPath);
   return outputPath;
 }

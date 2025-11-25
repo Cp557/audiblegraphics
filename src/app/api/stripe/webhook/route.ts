@@ -69,7 +69,6 @@ export async function POST(request: NextRequest) {
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         console.error('Payment failed for invoice:', invoice.id);
-        // TODO: Notify user of payment failure
         break;
       }
     }
@@ -197,7 +196,6 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   // Note: Subscription deletion is tracked by pro_end_date being in the past
   // No additional status field needed
-  console.log('Webhook: Subscription deleted for user:', userData.user_id);
 }
 
 

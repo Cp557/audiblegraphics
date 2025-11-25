@@ -37,21 +37,14 @@ export async function generateInfographicWithAudio(
     voice
   } = options;
 
-  console.log('\n====== STARTING INFOGRAPHIC GENERATION ======');
-  console.log(`Topic: ${topic}`);
-
   // Step 1: Validate the topic
-  console.log('\n--- Validating Topic ---');
   const isValid = await validateTopic(topic);
   if (!isValid) {
     throw new Error(`Invalid topic: "${topic}" is not suitable for an infographic`);
   }
-  console.log('✓ Topic is valid');
 
   // Step 2: Generate Content (Notes + Prompt)
-  console.log('\n--- Generating Content ---');
   const content = await generateInfographicContent(topic);
-  console.log(`✓ Generated script with ${content.script_sections.length} sections`);
 
   // Step 3: Create output directory
   const safeTopic = sanitizeTopic(topic);
@@ -59,33 +52,21 @@ export async function generateInfographicWithAudio(
     ? path.join(outputDir, safeTopic)
     : path.join(process.cwd(), outputDir, safeTopic);
   await mkdir(topicDir, { recursive: true });
-  console.log(`✓ Created output directory: ${topicDir}`);
 
   // Step 4: Generate Assets Parallel
   const audioPath = path.join(topicDir, 'narration.mp3');
   const imagePath = path.join(topicDir, 'infographic.jpg');
 
-  console.log('\n--- Generating Assets ---');
-  console.log(`Speaker Notes: ${content.speaker_notes.substring(0, 50)}...`);
-  console.log(`Image Prompt: ${content.image_prompt.substring(0, 50)}...`);
-
-  const [, imageResult] = await Promise.all([
+  await Promise.all([
     generateAudioFromSections(content.script_sections, audioPath, voice ? { voice } : {}),
     generateImage(content.image_prompt, imagePath, { imageSize: '1K', aspectRatio: '16:9' })
   ]);
-
-  console.log('✓ Audio generated (stitched)');
-  if (imageResult) {
-    console.log('✓ Image generated');
-  }
 
   // Step 5: Upload
   let imageUrl = '';
   let audioUrl = '';
 
   if (userId && presentationId) {
-    console.log('\n--- Uploading to Supabase Storage ---');
-
     // We reuse the existing upload functions but treat them as single assets
     // Using 'infographic' as the ID part of the path
     const [audioUpload, imageUpload] = await Promise.all([
@@ -95,22 +76,11 @@ export async function generateInfographicWithAudio(
 
     audioUrl = audioUpload.url;
     imageUrl = imageUpload?.url || '';
-    
-    console.log('✓ Uploaded assets to Supabase');
 
     // Step 6: Clean up temp files
-    console.log('\n--- Cleaning Up Temp Files ---');
     await cleanupTempFiles(topicDir);
-
-    console.log('\n====== INFOGRAPHIC GENERATION COMPLETE ======');
-    console.log(`Uploaded to Supabase: ${userId}/${presentationId}`);
-    console.log('=======================================\n');
   } else {
     // Fallback: Return local paths (for testing/CLI)
-    console.log('\n====== INFOGRAPHIC GENERATION COMPLETE (LOCAL ONLY) ======');
-    console.log(`Output directory: ${topicDir}`);
-    console.log('=======================================\n');
-    
     audioUrl = audioPath;
     imageUrl = imagePath;
   }

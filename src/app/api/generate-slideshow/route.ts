@@ -130,8 +130,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[API] Generating infographic for user ${user.id} on topic: "${topic}"`);
-
     // Validate topic first (quick check before expensive generation)
     const isValid = await validateSlideshowTopic(topic);
     if (!isValid) {
@@ -144,14 +142,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Create presentation record
-    console.log('[API] Creating presentation record...');
     const presentation = await createPresentation(user.id, topic);
-    console.log(`[API] Presentation created with ID: ${presentation.id}`);
 
     let result;
     try {
       // Step 2: Generate content and upload
-      console.log('[API] Generating infographic content...');
       result = await generateInfographicWithAudio({
         topic,
         userId: user.id,
@@ -160,14 +155,11 @@ export async function POST(request: NextRequest) {
       });
 
       // Step 3: Save assets to database
-      console.log('[API] Saving assets to database...');
       await updatePresentationAssets(presentation.id, user.id, {
         image_url: result.image_url,
         audio_url: result.audio_url,
         speaker_notes: result.speaker_notes
       });
-
-      console.log('[API] Successfully saved assets to database');
     } catch (error) {
       // Cleanup: If generation or database save fails, delete the presentation
       console.error('[API] Error during generation, cleaning up...');
@@ -179,8 +171,6 @@ export async function POST(request: NextRequest) {
       }
       throw error; // Re-throw to be caught by outer catch
     }
-
-    console.log(`[API] Successfully generated infographic for topic: "${topic}"`);
 
     // Increment usage count
     const { error: incrementError } = await supabase

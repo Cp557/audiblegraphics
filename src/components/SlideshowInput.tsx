@@ -62,14 +62,11 @@ export function SlideshowInput() {
     e.preventDefault();
 
     if (!topic.trim()) {
-      console.log('❌ Please enter a topic');
       return;
     }
 
     setLoading(true);
     setError(null);
-    console.log('🚀 Generating infographic for topic:', topic);
-    console.log('⏳ This may take 30-60 seconds...');
 
     try {
       const response = await fetch('/api/generate-slideshow', {
@@ -83,7 +80,6 @@ export function SlideshowInput() {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('❌ Error:', data);
         setError(
           typeof data?.error === 'string'
             ? data.error
@@ -92,9 +88,6 @@ export function SlideshowInput() {
         setLoading(false);
         return;
       }
-
-      console.log('✅ Infographic generated successfully!');
-      console.log('📊 Result:', data);
 
       // Navigate to the newly created presentation
       if (data.presentation_id) {
@@ -107,8 +100,7 @@ export function SlideshowInput() {
         router.prefetch(`/dashboard/${data.presentation_id}`);
         router.push(`/dashboard/${data.presentation_id}`);
       }
-    } catch (error) {
-      console.error('❌ Failed to generate infographic:', error);
+    } catch {
       setError('Unable to reach the server. Please check your connection and try again.');
       setLoading(false);
     }
