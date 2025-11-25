@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getPresentation } from '@/lib/supabase/presentations';
-import { createVideoJob } from '@/lib/video/job-store';
-import { startVideoGeneration } from '@/lib/video/job-manager';
-import { Slide } from '@/lib/supabase/presentations';
+import { processVideoJob } from '@/lib/video/job-manager';
+import { Slide, PresentationWithSlides } from '@/lib/supabase/presentations';
+import { v4 as uuidv4 } from 'uuid';
 
 export const maxDuration = 300; // 5 minutes max for video generation
 
@@ -64,6 +65,7 @@ export async function GET(
 
 /**
  * POST - Start video generation for a presentation
+ * Uses after() to keep the function alive while video generates
  */
 export async function POST(
   request: NextRequest,
@@ -119,10 +121,10 @@ export async function POST(
     }
 
     // Construct a normalized "slides" array for the video generator
-    let presentationWithSlides = { ...presentation } as any;
+    let presentationWithSlides: PresentationWithSlides;
     
     if (hasSlides) {
-      presentationWithSlides.slides = slides;
+      presentationWithSlides = { ...presentation, slides } as PresentationWithSlides;
     } else {
       // Create a synthetic slide from the presentation data
       const syntheticSlide: Slide = {
@@ -135,17 +137,28 @@ export async function POST(
         audio_url: presentation.audio_url,
         created_at: presentation.created_at
       };
-      presentationWithSlides.slides = [syntheticSlide];
+      presentationWithSlides = { ...presentation, slides: [syntheticSlide] } as PresentationWithSlides;
     }
 
-    // Create video job (in-memory for local progress tracking only)
-    const job = createVideoJob(presentationId, user.id);
+    // Generate a job ID for logging
+    const jobId = uuidv4();
+    const userId = user.id;
 
-    // Start video generation in background (fire and forget)
-    // Now also uploads to Supabase and saves URL to database
-    startVideoGeneration(job.id, presentationWithSlides, user.id);
+    // Use after() to run video generation AFTER response is sent
+    // This keeps the serverless function alive until the work completes
+    console.log(`[VideoRoute] Scheduling video generation with after() for job ${jobId}`);
+    
+    after(async () => {
+      console.log(`[VideoRoute] after() callback started for job ${jobId}`);
+      try {
+        await processVideoJob(jobId, presentationWithSlides, userId);
+        console.log(`[VideoRoute] after() callback completed for job ${jobId}`);
+      } catch (error) {
+        console.error(`[VideoRoute] after() callback failed for job ${jobId}:`, error);
+      }
+    });
 
-    // Return presentation ID for polling (not job ID)
+    // Return immediately - the function stays alive due to after()
     return NextResponse.json(
       {
         presentationId: presentationId,
