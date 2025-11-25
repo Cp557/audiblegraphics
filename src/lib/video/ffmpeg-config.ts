@@ -6,10 +6,14 @@
 
 import path from 'path';
 import os from 'os';
+import { existsSync } from 'fs';
 
 // Detect platform
 const platform = os.platform();
 const arch = os.arch();
+
+console.log(`[FFmpeg Config] Platform: ${platform}, Arch: ${arch}`);
+console.log(`[FFmpeg Config] process.cwd(): ${process.cwd()}`);
 
 let ffmpegPath = '';
 let ffprobePath = '';
@@ -66,9 +70,15 @@ if (platform === 'win32') {
   );
 } else {
   // Fallback to system PATH
-  console.warn(`Unsupported platform: ${platform}-${arch}, falling back to system FFmpeg`);
+  console.warn(`[FFmpeg Config] Unsupported platform: ${platform}-${arch}, falling back to system FFmpeg`);
   ffmpegPath = 'ffmpeg';
   ffprobePath = 'ffprobe';
 }
+
+// Log the paths and check if they exist
+console.log(`[FFmpeg Config] ffmpegPath: ${ffmpegPath}`);
+console.log(`[FFmpeg Config] ffprobePath: ${ffprobePath}`);
+console.log(`[FFmpeg Config] ffmpeg exists: ${existsSync(ffmpegPath)}`);
+console.log(`[FFmpeg Config] ffprobe exists: ${existsSync(ffprobePath)}`);
 
 export { ffmpegPath, ffprobePath };

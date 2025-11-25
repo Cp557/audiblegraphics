@@ -8,6 +8,8 @@ import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 
 // Set FFmpeg paths
+console.log(`[VideoGenerator] Setting ffmpeg path: ${ffmpegPath}`);
+console.log(`[VideoGenerator] Setting ffprobe path: ${ffprobePath}`);
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
@@ -27,7 +29,12 @@ export async function generatePresentationVideo(
   outputPath: string,
   onProgress?: ProgressCallback
 ): Promise<string> {
+  console.log(`[generatePresentationVideo] Starting with ${slides?.length || 0} slides`);
+  console.log(`[generatePresentationVideo] Output path: ${outputPath}`);
+  
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'video-gen-'));
+  console.log(`[generatePresentationVideo] Temp dir: ${tempDir}`);
+  
   const segmentPaths: string[] = [];
 
   try {
@@ -36,7 +43,7 @@ export async function generatePresentationVideo(
       throw new Error('No slides provided for video generation');
     }
 
-    console.log(`Starting video generation for ${slides.length} slides`);
+    console.log(`[generatePresentationVideo] Starting video generation for ${slides.length} slides`);
     if (onProgress) onProgress({ progress: 0, stage: 'initializing' });
 
     // 2. Generate video segment for each slide
@@ -97,16 +104,24 @@ async function generateSlideSegment(
   outputPath: string,
   tempDir: string
 ): Promise<void> {
+  console.log(`[generateSlideSegment] Processing slide: ${slide.id}`);
+  console.log(`[generateSlideSegment] Slide image_url: ${slide.image_url}`);
+  console.log(`[generateSlideSegment] Slide audio_url: ${slide.audio_url}`);
+  
   // 1. Generate the slide image frame
+  console.log(`[generateSlideSegment] Creating slide frame...`);
   const frameBuffer = await createSlideFrame({ slide });
   const imagePath = path.join(tempDir, `frame_${uuidv4()}.png`);
   await fs.writeFile(imagePath, frameBuffer);
+  console.log(`[generateSlideSegment] Frame saved to: ${imagePath}`);
 
   // 2. Get audio path
   // Assuming slide.audio_url is a public URL. FFmpeg can usually handle URLs.
   // However, for better reliability/performance, we might want to download it.
   // Given the previous "Inworld" fix, the audio might be local or remote.
   // If it's a URL, we pass it directly. If it's null, we generate silence.
+  
+  console.log(`[generateSlideSegment] Starting FFmpeg command...`);
   
   return new Promise((resolve, reject) => {
     const command = ffmpeg();
@@ -116,6 +131,7 @@ async function generateSlideSegment(
 
     // Add Audio Input
     if (slide.audio_url) {
+      console.log(`[generateSlideSegment] Adding audio input: ${slide.audio_url}`);
       command.input(slide.audio_url);
       
       // Output options:
@@ -155,11 +171,16 @@ async function generateSlideSegment(
     }
 
     command
-      .on('error', (err) => {
-        console.error('FFmpeg error for slide:', err);
+      .on('start', (commandLine) => {
+        console.log(`[generateSlideSegment] FFmpeg command: ${commandLine}`);
+      })
+      .on('error', (err, stdout, stderr) => {
+        console.error(`[generateSlideSegment] FFmpeg error:`, err);
+        console.error(`[generateSlideSegment] FFmpeg stderr:`, stderr);
         reject(err);
       })
       .on('end', () => {
+        console.log(`[generateSlideSegment] Segment completed: ${outputPath}`);
         resolve();
       })
       .save(outputPath);
