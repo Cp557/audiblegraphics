@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,19 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showResend, setShowResend] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Read error from URL params (e.g., from expired confirmation link)
+  useEffect(() => {
+    const urlError = searchParams.get('error');
+    if (urlError) {
+      setError(urlError);
+      setShowResend(true);
+    }
+  }, [searchParams]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +78,8 @@ export default function SignInPage() {
 
       // Check if user already exists (identities array will be empty)
       if (data.user && data.user.identities && data.user.identities.length === 0) {
-        setError('This email is already registered. Please sign in instead.');
+        setError('This email is already registered. If you haven\'t confirmed your email, enter your email above and click "Resend confirmation email" below.');
+        setShowResend(true);
         return;
       }
 
@@ -76,6 +88,37 @@ export default function SignInPage() {
       setPassword('');
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign up');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      setError('Please enter your email address first');
+      return;
+    }
+    
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${siteUrl}/auth/callback`,
+        }
+      });
+
+      if (error) throw error;
+
+      setSuccess('Confirmation email sent! Please check your inbox.');
+      setShowResend(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend confirmation email');
     } finally {
       setLoading(false);
     }
@@ -143,6 +186,7 @@ export default function SignInPage() {
                           setMode('signup');
                           setError('');
                           setSuccess('');
+                          setShowResend(false);
                         }}
                         className="text-[#4A90E2] hover:underline cursor-pointer"
                         disabled={loading}
@@ -162,6 +206,7 @@ export default function SignInPage() {
                         setMode('signin');
                         setError('');
                         setSuccess('');
+                        setShowResend(false);
                       }}
                       className="text-[#4A90E2] hover:underline cursor-pointer"
                       disabled={loading}
@@ -175,6 +220,22 @@ export default function SignInPage() {
               {error && (
                 <div className="p-3 rounded-md bg-red-50 border border-red-200">
                   <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+
+              {showResend && (
+                <div className="p-3 rounded-md bg-amber-50 border border-amber-200">
+                  <p className="text-sm text-amber-800 mb-2">
+                    Confirmation link expired or need a new one?
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    className="text-sm font-medium text-[#4A90E2] hover:underline cursor-pointer"
+                    disabled={loading}
+                  >
+                    {loading ? 'Sending...' : 'Resend confirmation email'}
+                  </button>
                 </div>
               )}
 
@@ -199,4 +260,3 @@ export default function SignInPage() {
     </div>
   );
 }
-
