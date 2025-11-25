@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from '@/lib/supabase/client';
 
-export default function SignInPage() {
+function SignInForm() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -127,83 +127,62 @@ export default function SignInPage() {
   const handleSubmit = mode === 'signin' ? handleSignIn : handleSignUp;
 
   return (
-    <div className="min-h-screen bg-[#FEFEFD] flex items-center justify-center px-6 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">
-            {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
-          </CardTitle>
-        </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-1">
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  disabled={loading}
-                />
-              </div>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="text-2xl text-center">
+          {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
+        </CardTitle>
+      </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-1">
+                Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                disabled={loading}
+              />
+            </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-1">
-                  Password
-                </label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  disabled={loading}
-                  minLength={6}
-                />
-              </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-1">
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                disabled={loading}
+                minLength={6}
+              />
+            </div>
 
-              {mode === 'signin' ? (
-                <div className="space-y-2">
-                  <div className="text-center">
-                    <Link 
-                      href="/forgot-password" 
-                      className="text-sm text-[#4A90E2] hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <div className="text-center">
-                    <span className="text-sm text-gray-600">
-                      Don't have an account?{' '}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMode('signup');
-                          setError('');
-                          setSuccess('');
-                          setShowResend(false);
-                        }}
-                        className="text-[#4A90E2] hover:underline cursor-pointer"
-                        disabled={loading}
-                      >
-                        Sign up
-                      </button>
-                    </span>
-                  </div>
+            {mode === 'signin' ? (
+              <div className="space-y-2">
+                <div className="text-center">
+                  <Link 
+                    href="/forgot-password" 
+                    className="text-sm text-[#4A90E2] hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
                 </div>
-              ) : (
                 <div className="text-center">
                   <span className="text-sm text-gray-600">
-                    Already have an account?{' '}
+                    Don't have an account?{' '}
                     <button
                       type="button"
                       onClick={() => {
-                        setMode('signin');
+                        setMode('signup');
                         setError('');
                         setSuccess('');
                         setShowResend(false);
@@ -211,52 +190,87 @@ export default function SignInPage() {
                       className="text-[#4A90E2] hover:underline cursor-pointer"
                       disabled={loading}
                     >
-                      Sign in
+                      Sign up
                     </button>
                   </span>
                 </div>
-              )}
-
-              {error && (
-                <div className="p-3 rounded-md bg-red-50 border border-red-200">
-                  <p className="text-sm text-red-800">{error}</p>
-                </div>
-              )}
-
-              {showResend && (
-                <div className="p-3 rounded-md bg-amber-50 border border-amber-200">
-                  <p className="text-sm text-amber-800 mb-2">
-                    Confirmation link expired or need a new one?
-                  </p>
+              </div>
+            ) : (
+              <div className="text-center">
+                <span className="text-sm text-gray-600">
+                  Already have an account?{' '}
                   <button
                     type="button"
-                    onClick={handleResendConfirmation}
-                    className="text-sm font-medium text-[#4A90E2] hover:underline cursor-pointer"
+                    onClick={() => {
+                      setMode('signin');
+                      setError('');
+                      setSuccess('');
+                      setShowResend(false);
+                    }}
+                    className="text-[#4A90E2] hover:underline cursor-pointer"
                     disabled={loading}
                   >
-                    {loading ? 'Sending...' : 'Resend confirmation email'}
+                    Sign in
                   </button>
-                </div>
-              )}
+                </span>
+              </div>
+            )}
 
-              {success && (
-                <div className="p-3 rounded-md bg-green-50 border border-green-200">
-                  <p className="text-sm text-green-800">{success}</p>
-                </div>
-              )}
+            {error && (
+              <div className="p-3 rounded-md bg-red-50 border border-red-200">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
 
-              <Button 
-                type="submit" 
-                className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
-                disabled={loading}
-              >
-                {loading 
-                  ? (mode === 'signin' ? 'Signing in...' : 'Creating account...') 
-                  : (mode === 'signin' ? 'Sign In' : 'Sign Up')}
-              </Button>
-            </form>
-          </CardContent>
+            {showResend && (
+              <div className="p-3 rounded-md bg-amber-50 border border-amber-200">
+                <p className="text-sm text-amber-800 mb-2">
+                  Confirmation link expired or need a new one?
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResendConfirmation}
+                  className="text-sm font-medium text-[#4A90E2] hover:underline cursor-pointer"
+                  disabled={loading}
+                >
+                  {loading ? 'Sending...' : 'Resend confirmation email'}
+                </button>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 rounded-md bg-green-50 border border-green-200">
+                <p className="text-sm text-green-800">{success}</p>
+              </div>
+            )}
+
+            <Button 
+              type="submit" 
+              className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
+              disabled={loading}
+            >
+              {loading 
+                ? (mode === 'signin' ? 'Signing in...' : 'Creating account...') 
+                : (mode === 'signin' ? 'Sign In' : 'Sign Up')}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <div className="min-h-screen bg-[#FEFEFD] flex items-center justify-center px-6 py-12">
+      <Suspense fallback={
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">Loading...</CardTitle>
+          </CardHeader>
         </Card>
+      }>
+        <SignInForm />
+      </Suspense>
     </div>
   );
 }
