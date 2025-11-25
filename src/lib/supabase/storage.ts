@@ -129,6 +129,57 @@ export async function uploadSlideAudio(
 }
 
 /**
+ * Upload a video file to the presentation-videos bucket
+ * @param filePath - Local file path to upload
+ * @param userId - User ID for folder organization
+ * @param presentationId - Presentation ID for folder organization
+ * @returns Storage URL and path
+ */
+export async function uploadPresentationVideo(
+  filePath: string,
+  userId: string,
+  presentationId: string
+): Promise<UploadResult> {
+  try {
+    // Read file from local filesystem
+    const fileBuffer = await readFile(filePath);
+
+    // Construct storage path: {user_id}/{presentation_id}/video.mp4
+    const storagePath = `${userId}/${presentationId}/video.mp4`;
+
+    // Upload to presentation-videos bucket
+    const { data, error } = await supabaseAdmin.storage
+      .from('presentation-videos')
+      .upload(storagePath, fileBuffer, {
+        contentType: 'video/mp4',
+        upsert: true, // Overwrite if exists
+      });
+
+    if (error) {
+      throw new Error(`Failed to upload video: ${error.message}`);
+    }
+
+    // Get signed URL (for private buckets with RLS)
+    // Expires in 1 year (max allowed)
+    const { data: urlData, error: urlError } = await supabaseAdmin.storage
+      .from('presentation-videos')
+      .createSignedUrl(storagePath, 31536000); // 1 year in seconds
+
+    if (urlError) {
+      throw new Error(`Failed to create signed URL: ${urlError.message}`);
+    }
+
+    return {
+      url: urlData.signedUrl,
+      path: storagePath,
+    };
+  } catch (error) {
+    console.error(`Error uploading video from ${filePath}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Delete all files for a presentation
  * @param userId - User ID
  * @param presentationId - Presentation ID
@@ -171,6 +222,23 @@ export async function deletePresentation(
 
       if (audioError) {
         console.error('Error deleting audio files:', audioError);
+      }
+    }
+
+    // List all files in the presentation folder for videos
+    const { data: videoFiles } = await supabaseAdmin.storage
+      .from('presentation-videos')
+      .list(folderPath);
+
+    // Delete video files
+    if (videoFiles && videoFiles.length > 0) {
+      const videoPaths = videoFiles.map((file) => `${folderPath}/${file.name}`);
+      const { error: videoError } = await supabaseAdmin.storage
+        .from('presentation-videos')
+        .remove(videoPaths);
+
+      if (videoError) {
+        console.error('Error deleting video files:', videoError);
       }
     }
   } catch (error) {

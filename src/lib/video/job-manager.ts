@@ -1,6 +1,7 @@
-import { PresentationWithSlides } from '@/lib/supabase/presentations';
+import { PresentationWithSlides, updatePresentationVideoUrl } from '@/lib/supabase/presentations';
 import { updateVideoJob } from './job-store';
 import { generatePresentationVideo, cleanupFile, VideoGenerationProgress } from './video-generator';
+import { uploadPresentationVideo } from '@/lib/supabase/storage';
 import path from 'path';
 import os from 'os';
 import { promises as fs } from 'fs';
@@ -27,10 +28,12 @@ async function ensureTempVideosDir(): Promise<void> {
 /**
  * Processes a video generation job in the background
  * This function is designed to be fire-and-forget (async processing)
+ * Generates video, uploads to Supabase, and saves URL to database
  */
 export async function processVideoJob(
   jobId: string,
-  presentation: PresentationWithSlides
+  presentation: PresentationWithSlides,
+  userId: string
 ): Promise<void> {
   let outputPath: string | null = null;
 
@@ -59,17 +62,29 @@ export async function processVideoJob(
       }
     );
 
-    // Update job status to completed with server endpoint URL
-    // The video file stays on the server temporarily
+    // Upload video to Supabase storage
+    updateVideoJob(jobId, {
+      progress: 90,
+    });
+    
+    console.log(`Uploading video to Supabase for presentation ${presentation.id}...`);
+    const uploadResult = await uploadPresentationVideo(outputPath, userId, presentation.id);
+    
+    // Save video URL to presentations table
+    await updatePresentationVideoUrl(presentation.id, userId, uploadResult.url);
+    console.log(`Video URL saved to database: ${uploadResult.url}`);
+
+    // Update job status to completed with the Supabase URL
     updateVideoJob(jobId, {
       status: 'completed',
       progress: 100,
-      videoUrl: `/api/video-jobs/${jobId}/download`,
+      videoUrl: uploadResult.url,
       completedAt: new Date(),
     });
 
-    // Note: We don't cleanup the file immediately - it will be cleaned up after download
-    // or by a scheduled cleanup task
+    // Cleanup temp file now that it's uploaded
+    await cleanupFile(outputPath);
+    
   } catch (error) {
     console.error('Video generation failed:', error);
 
@@ -125,10 +140,11 @@ export async function cleanupOldVideos(maxAgeMinutes: number = 30): Promise<void
  */
 export function startVideoGeneration(
   jobId: string,
-  presentation: PresentationWithSlides
+  presentation: PresentationWithSlides,
+  userId: string
 ): void {
   // Fire and forget - don't await
-  processVideoJob(jobId, presentation).catch((error) => {
+  processVideoJob(jobId, presentation, userId).catch((error) => {
     console.error('Fatal error in video generation:', error);
   });
 }

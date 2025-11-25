@@ -18,6 +18,15 @@ interface JobStatusResponse {
   error?: string;
 }
 
+interface VideoStartResponse {
+  jobId?: string;
+  status: string;
+  videoUrl?: string;
+  message?: string;
+  cached?: boolean;
+  error?: string;
+}
+
 export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps) {
   const [status, setStatus] = useState<JobStatus>('idle');
   const [progress, setProgress] = useState(0);
@@ -33,6 +42,47 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
       }
     };
   }, []);
+
+  // Download video from URL
+  const downloadVideo = async (videoUrl: string) => {
+    try {
+      const videoResponse = await fetch(videoUrl);
+      if (!videoResponse.ok) {
+        throw new Error('Failed to download video file');
+      }
+
+      // Get the blob
+      const blob = await videoResponse.blob();
+
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `presentation-${presentationId}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Cleanup the blob URL
+      window.URL.revokeObjectURL(url);
+
+      // Show success state briefly
+      setStatus('completed');
+      setTimeout(() => {
+        setStatus('idle');
+        setProgress(0);
+        setJobId(null);
+      }, 2000);
+    } catch (downloadError) {
+      console.error('Error downloading video file:', downloadError);
+      setStatus('failed');
+      setError('Failed to download video file');
+      setTimeout(() => {
+        setStatus('idle');
+        setError(null);
+      }, 5000);
+    }
+  };
 
   // Start polling for job status
   const startPolling = (jobId: string) => {
@@ -60,43 +110,8 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
             pollingIntervalRef.current = null;
           }
 
-          // Download the video file from the server
-          try {
-            const videoResponse = await fetch(data.videoUrl);
-            if (!videoResponse.ok) {
-              throw new Error('Failed to download video file');
-            }
-
-            // Get the blob
-            const blob = await videoResponse.blob();
-
-            // Create a download link
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `presentation-${presentationId}.mp4`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            // Cleanup the blob URL
-            window.URL.revokeObjectURL(url);
-
-            // Reset to idle after a short delay
-            setTimeout(() => {
-              setStatus('idle');
-              setProgress(0);
-              setJobId(null);
-            }, 2000);
-          } catch (downloadError) {
-            console.error('Error downloading video file:', downloadError);
-            setStatus('failed');
-            setError('Failed to download video file');
-            setTimeout(() => {
-              setStatus('idle');
-              setError(null);
-            }, 5000);
-          }
+          // Download the video
+          await downloadVideo(data.videoUrl);
         } else if (data.status === 'failed') {
           // Stop polling
           if (pollingIntervalRef.current) {
@@ -132,21 +147,33 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
       setError(null);
       setProgress(0);
 
-      // Start video generation
+      // Start video generation (or get cached video)
       const response = await fetch(`/api/presentations/${presentationId}/video`, {
         method: 'POST',
       });
 
+      const data: VideoStartResponse = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to start video generation');
       }
 
-      const data = await response.json();
-      setJobId(data.jobId);
+      // Check if video was already cached
+      if (data.cached && data.videoUrl) {
+        // Video already exists, download it directly
+        setStatus('processing');
+        setProgress(100);
+        await downloadVideo(data.videoUrl);
+        return;
+      }
 
-      // Start polling for status
-      startPolling(data.jobId);
+      // Video is being generated, start polling
+      if (data.jobId) {
+        setJobId(data.jobId);
+        startPolling(data.jobId);
+      } else {
+        throw new Error('No job ID returned');
+      }
     } catch (err) {
       console.error('Error starting video generation:', err);
       setStatus('failed');

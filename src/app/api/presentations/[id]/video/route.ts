@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getPresentation } from '@/lib/supabase/presentations';
 import { createVideoJob } from '@/lib/video/job-store';
 import { startVideoGeneration } from '@/lib/video/job-manager';
-import { Slide } from '@/lib/supabase/presentations'; // Ensure this type exists or is compatible
+import { Slide } from '@/lib/supabase/presentations';
 
 export const maxDuration = 300; // 5 minutes max for video generation
 
@@ -27,20 +27,28 @@ export async function POST(
     const { id: presentationId } = await params;
 
     // Fetch presentation
-    // Note: getPresentation currently returns just the presentation row, not joined slides.
-    // If we are in "infographic mode", the presentation itself IS the content.
     const presentation = await getPresentation(presentationId, user.id);
 
     if (!presentation) {
       return NextResponse.json({ error: 'Presentation not found' }, { status: 404 });
     }
 
+    // Check if video already exists - return it immediately
+    if (presentation.video_url) {
+      return NextResponse.json(
+        {
+          status: 'completed',
+          videoUrl: presentation.video_url,
+          message: 'Video already exists',
+          cached: true,
+        },
+        { status: 200 }
+      );
+    }
+
     // Determine if we have content to generate video from.
-    // Case A: Infographic mode (content on presentation object)
     const hasInfographicContent = !!(presentation.image_url && presentation.audio_url);
     
-    // Case B: Slideshow mode (content in slides array - not currently fetched by getPresentation but we'll handle the logic)
-    // If getPresentation is updated to return slides later, this check handles it.
     // For now, we'll cast to any to check for slides property safely
     const slides = (presentation as any).slides || [];
     const hasSlides = slides.length > 0;
@@ -64,7 +72,7 @@ export async function POST(
         presentation_id: presentation.id,
         slide_number: 1,
         slide_title: presentation.title,
-        slide_content: presentation.speaker_notes || '', // Use notes as content for the frame text
+        slide_content: presentation.speaker_notes || '',
         image_url: presentation.image_url,
         audio_url: presentation.audio_url,
         created_at: presentation.created_at
@@ -72,11 +80,12 @@ export async function POST(
       presentationWithSlides.slides = [syntheticSlide];
     }
 
-    // Create video job (in-memory, no database)
+    // Create video job (in-memory for progress tracking)
     const job = createVideoJob(presentationId, user.id);
 
     // Start video generation in background (fire and forget)
-    startVideoGeneration(job.id, presentationWithSlides);
+    // Now also uploads to Supabase and saves URL to database
+    startVideoGeneration(job.id, presentationWithSlides, user.id);
 
     // Return job ID immediately
     return NextResponse.json(

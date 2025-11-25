@@ -53,4 +53,9 @@ slide-audio
 - Allowed types: audio/mpeg, audio/mp3, audio/wav
 - Path structure: `{user_id}/{presentation_id}/{slide_id}.mp3`
 
+presentation-videos
+- Private bucket (100MB limit)
+- Allowed types: video/mp4
+- Path structure: `{user_id}/{presentation_id}/video.mp4`
+
 RLS policies enforce users only access files in folders matching their user_id.

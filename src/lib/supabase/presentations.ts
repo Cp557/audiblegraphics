@@ -18,6 +18,7 @@ export interface Presentation {
   image_url: string | null;
   audio_url: string | null;
   speaker_notes: string | null;
+  video_url: string | null;
   created_at: string;
 }
 
@@ -155,6 +156,32 @@ export async function deletePresentation(
 }
 
 /**
+ * Update a presentation's video URL
+ * @param presentationId - Presentation ID
+ * @param userId - User ID
+ * @param videoUrl - Video URL from storage
+ */
+export async function updatePresentationVideoUrl(
+  presentationId: string,
+  userId: string,
+  videoUrl: string
+): Promise<Presentation> {
+  const { data, error } = await supabaseAdmin
+    .from('presentations')
+    .update({ video_url: videoUrl })
+    .eq('id', presentationId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update presentation video URL: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
  * Update a presentation
  * @param presentationId - Presentation ID
  * @param userId - User ID
@@ -163,7 +190,7 @@ export async function deletePresentation(
 export async function updatePresentation(
   presentationId: string,
   userId: string,
-  updates: Partial<Pick<Presentation, 'title'>>
+  updates: Partial<Pick<Presentation, 'title' | 'video_url'>>
 ): Promise<Presentation> {
   const { data, error } = await supabaseAdmin
     .from('presentations')
