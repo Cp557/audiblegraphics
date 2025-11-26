@@ -36,10 +36,20 @@ const ERROR_MAP: Record<string, UserFriendlyError> = {
     description: 'Our AI service is temporarily unavailable. Please try again in a few minutes.',
   },
   
+  // Server overload errors
+  'model is overloaded': {
+    title: 'Service Busy',
+    description: 'Our AI service is currently busy. Please try again in a few minutes.',
+  },
+  '503': {
+    title: 'Service Busy',
+    description: 'Our AI service is currently busy. Please try again in a few minutes.',
+  },
+  
   // Generation errors
   'Failed to generate infographic': {
     title: 'Generation Failed',
-    description: 'We couldn\'t create your infographic. Please try again or use a different topic.',
+    description: 'We couldn\'t create your infographic. Please try again later.',
   },
   
   // Video errors (combined into one)

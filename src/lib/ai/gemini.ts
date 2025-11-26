@@ -91,7 +91,7 @@ Output:0
     return result === '1';
   } catch (error: any) {
     // Check for Rate Limit (429) or Server Error (500)
-    if (error?.status === 429 || error?.status === 500 || error?.code === 429 || error?.code === 500) {
+    if (error?.status === 429 || error?.status === 500 || error?.status === 503 || error?.code === 429 || error?.code === 500 || error?.code === 503) {
       console.warn(`Gemini validateTopic failed (${error.status || error.code}), switching to OpenAI...`);
       return validateTopicOpenAI(topic);
     }
@@ -274,7 +274,7 @@ export async function generateImage(
       stack: error?.stack,
     });
 
-    const isRateLimit = error?.status === 429 || error?.status === 500 || error?.code === 429 || error?.code === 500;
+    const isRateLimit = error?.status === 429 || error?.status === 500 || error?.status === 503 || error?.code === 429 || error?.code === 500 || error?.code === 503;
 
     // Try backup key if available and it is a rate limit/resource exhausted error
     if (isRateLimit && process.env.GEMINI_API_KEY2) {
