@@ -8,8 +8,6 @@ import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 
 // Set FFmpeg paths
-console.log(`[VideoGenerator] Setting ffmpeg path: ${ffmpegPath}`);
-console.log(`[VideoGenerator] Setting ffprobe path: ${ffprobePath}`);
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 

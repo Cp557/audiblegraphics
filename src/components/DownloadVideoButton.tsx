@@ -168,7 +168,10 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
         return;
       }
 
-      // Video is being generated, start polling the database
+      // Video is being generated, notify user and start polling
+      toast.info('Generating Video', {
+        description: 'This may take a couple of minutes. Please stay on this page until it is ready.',
+      });
       setStatus('processing');
       startPolling();
       
