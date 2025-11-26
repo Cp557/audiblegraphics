@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useEffect } from "react"
 import { SquarePlus } from "lucide-react"
 import { usePathname } from "next/navigation"
 
@@ -52,6 +53,14 @@ export function AppSidebar({ user, presentations = [], ...props }: AppSidebarPro
     ...data.defaultUser,
     ...user,
   }
+
+  // Daily sync with Stripe (fire and forget)
+  // This ensures our database stays in sync with Stripe subscription data
+  useEffect(() => {
+    fetch('/api/sync-subscription', { method: 'POST' }).catch(() => {
+      // Silently fail - this is just a background sync
+    })
+  }, [])
 
   // Map presentations to project format
   const projects = presentations.map((presentation) => ({

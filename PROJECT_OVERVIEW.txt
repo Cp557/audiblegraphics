@@ -1,4 +1,4 @@
-AudibleSlides is a website that generates slideshows with images and narration for educational purposes.
+AudibleSlides is a website that generates narrated infographics.
 
 Environment Variables:
 NEXT_PUBLIC_SUPABASE_URL
@@ -31,6 +31,7 @@ main_table:
 - subscription_tier - text (Null, Pro, Ultra)
 - monthly_generated_slideshows - int2 (How many slides the user has generated this month)
 - last_reset_date - timestampz (default now(), when the monthly_generated_slides was last reset)
+- last_stripe_sync - timestampz (default now(), when was that last time we synced stripe and the supabase table)
 
 presentations:
 - id - uuid (primary key, uuid_generate_v4())
@@ -38,8 +39,10 @@ presentations:
 - title - text
 - created_at - timestamptz (default now())
 - image_url - text
+- aspect_ratio - text
 - audio_url - text
 - speaker_notes - text
+
 
 Storage Buckets
 
