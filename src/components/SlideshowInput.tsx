@@ -97,7 +97,7 @@ export function SlideshowInput() {
               if (friendlyError.action === 'Sign In') {
                 router.push('/sign-in');
               } else if (friendlyError.action === 'Upgrade Plan') {
-                router.push('/dashboard#pricing');
+                router.push('/#pricing');
               }
             },
           } : undefined,
