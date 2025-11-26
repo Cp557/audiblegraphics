@@ -110,7 +110,7 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
     <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto">
       {/* Pro Plan Card */}
       <Card
-        className="border-2 border-gray-200 relative overflow-hidden"
+        className="border-2 border-gray-200 relative overflow-hidden flex flex-col"
         onMouseEnter={(e) => handleHover(e, true)}
         onMouseLeave={(e) => handleHover(e, false)}
       >
@@ -131,7 +131,7 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col flex-1">
           <ul className="text-sm text-gray-600 space-y-2">
             <li>✔︎ 50 infographics per month</li>
             <li>✔︎ High-quality images & audio</li>
@@ -139,46 +139,38 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
             <li>✔︎ Download as video</li>
             <li>✔︎ Cancel anytime</li>
           </ul>
-          <div 
-            className="transition-all duration-300"
-            style={{
-              opacity: (isLoggedIn && subscriptionTier === 'Pro') ? 1 : 0,
-              height: (isLoggedIn && subscriptionTier === 'Pro') ? 'auto' : '0',
-              overflow: 'hidden',
-              marginTop: (isLoggedIn && subscriptionTier === 'Pro') ? '1rem' : '0'
-            }}
-          >
-            <Button
-              onClick={handleManageSubscription}
-              disabled={isManagingSubscription}
-              className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
-            >
-              {isManagingSubscription ? "Loading..." : "Manage Subscription"}
-            </Button>
-          </div>
-          <div 
-            className="transition-all duration-300"
-            style={{
-              opacity: (isLoggedIn && !subscriptionTier) ? 1 : 0,
-              height: (isLoggedIn && !subscriptionTier) ? 'auto' : '0',
-              overflow: 'hidden',
-              marginTop: (isLoggedIn && !subscriptionTier) ? '1rem' : '0'
-            }}
-          >
-            <Button
-              onClick={() => handleUpgrade('pro')}
-              disabled={isUpgradingPro}
-              className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
-            >
-              {isUpgradingPro ? "Loading..." : "Upgrade to Pro"}
-            </Button>
+          <div className="mt-auto pt-4">
+            {isLoggedIn && subscriptionTier === 'Pro' && (
+              <>
+                <Button
+                  onClick={handleManageSubscription}
+                  disabled={isManagingSubscription}
+                  className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
+                >
+                  {isManagingSubscription ? "Loading..." : "Manage Subscription"}
+                </Button>
+                {/* Invisible spacer to match Ultra card height */}
+                <p className="text-xs text-center text-transparent mt-2 select-none" aria-hidden="true">
+                  &nbsp;
+                </p>
+              </>
+            )}
+            {isLoggedIn && !subscriptionTier && (
+              <Button
+                onClick={() => handleUpgrade('pro')}
+                disabled={isUpgradingPro}
+                className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
+              >
+                {isUpgradingPro ? "Loading..." : "Upgrade to Pro"}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
 
       {/* Ultra Plan Card */}
       <Card
-        className="border-2 border-gray-200 relative overflow-hidden"
+        className="border-2 border-gray-200 relative overflow-hidden flex flex-col"
         onMouseEnter={(e) => handleHover(e, true)}
         onMouseLeave={(e) => handleHover(e, false)}
       >
@@ -199,7 +191,7 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col flex-1">
           <ul className="text-sm text-gray-600 space-y-2">
             <li>✔︎ 100 infographics per month</li>
             <li>✔︎ High-quality images & audio</li>
@@ -207,39 +199,48 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
             <li>✔︎ Download as video</li>
             <li>✔︎ Cancel anytime</li>
           </ul>
-          <div 
-            className="transition-all duration-300"
-            style={{
-              opacity: (isLoggedIn && subscriptionTier === 'Pro') ? 1 : 0,
-              height: (isLoggedIn && subscriptionTier === 'Pro') ? 'auto' : '0',
-              overflow: 'hidden',
-              marginTop: (isLoggedIn && subscriptionTier === 'Pro') ? '1rem' : '0'
-            }}
-          >
-            <Button
-              onClick={handleManageSubscription}
-              disabled={isManagingSubscription}
-              className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
-            >
-              {isManagingSubscription ? "Loading..." : "Manage Subscription"}
-            </Button>
-          </div>
-          <div 
-            className="transition-all duration-300"
-            style={{
-              opacity: (isLoggedIn && !subscriptionTier) ? 1 : 0,
-              height: (isLoggedIn && !subscriptionTier) ? 'auto' : '0',
-              overflow: 'hidden',
-              marginTop: (isLoggedIn && !subscriptionTier) ? '1rem' : '0'
-            }}
-          >
-            <Button
-              onClick={() => handleUpgrade('ultra')}
-              disabled={isUpgradingUltra}
-              className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
-            >
-              {isUpgradingUltra ? "Loading..." : "Upgrade to Ultra"}
-            </Button>
+          <div className="mt-auto pt-4">
+            {/* For Ultra users - show manage subscription */}
+            {isLoggedIn && subscriptionTier === 'Ultra' && (
+              <>
+                <Button
+                  onClick={handleManageSubscription}
+                  disabled={isManagingSubscription}
+                  className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
+                >
+                  {isManagingSubscription ? "Loading..." : "Manage Subscription"}
+                </Button>
+                {/* Invisible spacer to match card heights */}
+                <p className="text-xs text-center text-transparent mt-2 select-none" aria-hidden="true">
+                  &nbsp;
+                </p>
+              </>
+            )}
+            {/* For Pro users - show upgrade to Ultra with explanation */}
+            {isLoggedIn && subscriptionTier === 'Pro' && (
+              <>
+                <Button
+                  onClick={handleManageSubscription}
+                  disabled={isManagingSubscription}
+                  className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
+                >
+                  {isManagingSubscription ? "Loading..." : "Upgrade to Ultra"}
+                </Button>
+                <p className="text-xs text-center text-gray-500 mt-2">
+                  +$10/month • Get 50 more credits instantly
+                </p>
+              </>
+            )}
+            {/* For free users - show upgrade to Ultra */}
+            {isLoggedIn && !subscriptionTier && (
+              <Button
+                onClick={() => handleUpgrade('ultra')}
+                disabled={isUpgradingUltra}
+                className="w-full bg-[#4A90E2] hover:bg-[#3a7bc8] cursor-pointer"
+              >
+                {isUpgradingUltra ? "Loading..." : "Upgrade to Ultra"}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
