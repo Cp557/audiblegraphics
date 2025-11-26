@@ -92,14 +92,14 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
       <div className="w-full h-[calc(100vh-140px)] max-h-[900px] flex flex-col gap-4">
         
         {/* Infographic Image Column */}
-        <div className="relative w-full flex-1 min-h-0 flex justify-center">
-            <div className={`relative h-full w-auto ${presentation.aspect_ratio === '9:16' ? 'aspect-[9/16]' : 'aspect-[16/9]'} rounded-xl overflow-hidden border shadow-lg border-gray-200`}>
+        <div className="relative w-full flex-1 min-h-0 flex justify-center items-center">
+            <div className={`relative h-full w-auto max-w-full ${presentation.aspect_ratio === '9:16' ? 'aspect-[9/16]' : 'aspect-[16/9]'} rounded-xl overflow-hidden border shadow-lg border-gray-200 bg-background`}>
             {image_url ? (
               <Image
                 src={image_url}
                 alt={title}
                 fill
-                className="object-cover"
+                className="object-contain"
                 priority
                 unoptimized
               />

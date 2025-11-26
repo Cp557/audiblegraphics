@@ -7,6 +7,7 @@ import path from 'path';
 import os from 'os';
 import { mkdir } from 'fs/promises';
 import { validateTopic, generateInfographicContent, generateImage } from './gemini';
+import { generateImageOpenAI } from './openai';
 import { generateAudioFromSections } from './audio-generator';
 import { uploadSlideImage, uploadSlideAudio, cleanupTempFiles } from '../supabase/storage';
 import type { GenerationOptions, InfographicResult } from './types';
@@ -35,7 +36,8 @@ export async function generateInfographicWithAudio(
     userId,
     presentationId,
     voice,
-    aspectRatio = '16:9'
+    aspectRatio = '16:9',
+    forceOpenAI = false
   } = options;
 
   // Step 1: Validate the topic
@@ -54,14 +56,20 @@ export async function generateInfographicWithAudio(
     : path.join(process.cwd(), outputDir, safeTopic);
   await mkdir(topicDir, { recursive: true });
 
-  // Step 4: Generate Assets Parallel
+  // Step 4: Generate Assets (image first to fail fast on 503)
   const audioPath = path.join(topicDir, 'narration.mp3');
   const imagePath = path.join(topicDir, 'infographic.jpg');
 
-  await Promise.all([
-    generateAudioFromSections(content.script_sections, audioPath, voice ? { voice } : {}),
-    generateImage(content.image_prompt, imagePath, { imageSize: '1K', aspectRatio })
-  ]);
+  // Generate image first - this is where Gemini 503 can occur
+  // By doing this first, we avoid wasting time on audio if image fails
+  if (forceOpenAI) {
+    await generateImageOpenAI(content.image_prompt, imagePath, { imageSize: '1K', aspectRatio });
+  } else {
+    await generateImage(content.image_prompt, imagePath, { imageSize: '1K', aspectRatio });
+  }
+
+  // Generate audio only after image succeeds
+  await generateAudioFromSections(content.script_sections, audioPath, voice ? { voice } : {});
 
   // Step 5: Upload
   let imageUrl = '';

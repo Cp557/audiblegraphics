@@ -14,6 +14,17 @@ import {
 } from './openai';
 
 /**
+ * Custom error thrown when both Gemini API keys fail with 503 (overloaded)
+ * This allows the caller to prompt the user for OpenAI fallback confirmation
+ */
+export class GeminiOverloadedError extends Error {
+  constructor(message = 'Google\'s image model is currently overloaded. Please try again later or use OpenAI.') {
+    super(message);
+    this.name = 'GeminiOverloadedError';
+  }
+}
+
+/**
  * Initialize Gemini client with API key
  */
 export function createGeminiClient(specificKey?: string) {
@@ -275,6 +286,8 @@ export async function generateImage(
     });
 
     const isRateLimit = error?.status === 429 || error?.status === 500 || error?.status === 503 || error?.code === 429 || error?.code === 500 || error?.code === 503;
+    const is503 = error?.status === 503 || error?.code === 503;
+    let backupAlso503 = false;
 
     // Try backup key if available and it is a rate limit/resource exhausted error
     if (isRateLimit && process.env.GEMINI_API_KEY2) {
@@ -312,19 +325,26 @@ export async function generateImage(
           await writeFile(outputPath, imageBuffer);
           return outputPath;
         }
-      } catch (backupError) {
+      } catch (backupError: any) {
         console.error('Backup key also failed or exhausted:', backupError);
-        // Continue to OpenAI fallback
+        backupAlso503 = backupError?.status === 503 || backupError?.code === 503;
       }
     }
 
-    // Fallback
+    // If both keys failed with 503, throw GeminiOverloadedError to prompt user
+    if (is503 && (backupAlso503 || !process.env.GEMINI_API_KEY2)) {
+      console.warn('Both Gemini keys returned 503. Throwing GeminiOverloadedError for user confirmation.');
+      throw new GeminiOverloadedError();
+    }
+
+    // Fallback to OpenAI for other rate limit errors (429, 500)
     if (isRateLimit) {
       console.warn(`Gemini generateImage failed (${error.status || error.code}), switching to OpenAI...`);
       return generateImageOpenAI(enhancedPrompt, outputPath, options);
     }
 
-    console.error('Error generating image (non-429/500):', error);
+    console.error('Error generating image (non-429/500/503):', error);
     return '';
   }
 }
+

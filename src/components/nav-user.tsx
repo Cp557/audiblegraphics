@@ -9,6 +9,7 @@ import {
   Sparkles,
   User,
 } from "lucide-react"
+import { getSlideshowLimit } from "@/lib/utils/subscription"
 import {
   Avatar,
   AvatarFallback,
@@ -49,8 +50,12 @@ export function NavUser({
     email: string
     avatar: string
     subscription_tier?: "Pro" | "Ultra" | null
+    monthly_generated_slideshows?: number
   }
   }) {
+  const used = user.monthly_generated_slideshows ?? 0
+  const limit = getSlideshowLimit(user.subscription_tier)
+  const percentage = Math.min((used / limit) * 100, 100)
   const [isManagingSubscription, setIsManagingSubscription] = React.useState(false)
   const [isSigningOut, setIsSigningOut] = React.useState(false)
   const [showSignOutDialog, setShowSignOutDialog] = React.useState(false)
@@ -128,6 +133,28 @@ export function NavUser({
 
   return (
     <SidebarMenu>
+      {/* Credits Display */}
+      <div className="px-2 pb-2 group-data-[collapsible=icon]:hidden">
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+          <span>Credits</span>
+          <span className="font-medium tabular-nums">
+            {used}/{limit}
+          </span>
+        </div>
+        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-300 ${
+              percentage >= 90 
+                ? 'bg-red-500' 
+                : percentage >= 70 
+                  ? 'bg-amber-500' 
+                  : 'bg-primary'
+            }`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+      </div>
+
       <SidebarMenuItem>
         <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>

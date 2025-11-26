@@ -43,10 +43,10 @@ export default async function PresentationPage({
   // Fetch all user presentations for sidebar
   const presentations = await getUserPresentations(user.id);
 
-  // Fetch user's subscription status
+  // Fetch user's subscription status and usage
   const { data: subscriptionData } = await supabase
     .from("main_table")
-    .select("subscription_tier")
+    .select("subscription_tier, monthly_generated_slideshows")
     .eq("user_id", user.id)
     .single();
 
@@ -55,6 +55,7 @@ export default async function PresentationPage({
     email: user.email || '',
     avatar: user.user_metadata?.avatar_url,
     subscription_tier: subscriptionData?.subscription_tier as "Pro" | "Ultra" | null,
+    monthly_generated_slideshows: subscriptionData?.monthly_generated_slideshows ?? 0,
   };
 
   return (

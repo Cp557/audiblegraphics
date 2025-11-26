@@ -87,12 +87,21 @@ export async function generateImageOpenAI(
 
   const enhancedPrompt = `${prompt.trim()} Do not include any text in the image.`;
 
+  // Map aspectRatio to OpenAI supported sizes
+  // Supported: '1024x1024', '1024x1536', '1536x1024', 'auto'
+  let size: '1024x1024' | '1536x1024' | '1024x1536' = '1024x1024';
+  if (options.aspectRatio === '16:9') {
+    size = '1536x1024'; // Landscape (3:2, closest to 16:9)
+  } else if (options.aspectRatio === '9:16') {
+    size = '1024x1536'; // Portrait (2:3, closest to 9:16)
+  }
+
   try {
     const response = await client.images.generate({
-      model: 'gpt-image-1-mini',
+      model: 'gpt-image-1',
       prompt: enhancedPrompt,
       n: 1,
-      size: '1024x1024', // Changed to supported 1024x1024 size
+      size,
     });
 
     const b64Json = response.data?.[0]?.b64_json;

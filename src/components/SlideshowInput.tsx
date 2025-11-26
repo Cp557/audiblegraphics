@@ -13,6 +13,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const VOICES = [
   { id: 'Craig', name: 'Craig' },
@@ -34,6 +44,7 @@ export function SlideshowInput() {
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [loading, setLoading] = useState(false);
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
+  const [showOverloadDialog, setShowOverloadDialog] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
 
@@ -65,13 +76,7 @@ export function SlideshowInput() {
     };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!topic.trim()) {
-      return;
-    }
-
+  const generateSlideshow = async (forceOpenAI = false) => {
     setLoading(true);
 
     try {
@@ -80,12 +85,19 @@ export function SlideshowInput() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ topic, voice, aspectRatio }),
+        body: JSON.stringify({ topic, voice, aspectRatio, forceOpenAI }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        // Check if this is a Gemini overload error
+        if (data?.geminiOverloaded) {
+          setLoading(false);
+          setShowOverloadDialog(true);
+          return;
+        }
+
         const errorMsg = typeof data?.error === 'string' ? data.error : 'Unknown error';
         const friendlyError = getUserFriendlyError(errorMsg);
         
@@ -127,126 +139,160 @@ export function SlideshowInput() {
     }
   };
 
-  return (
-    <div className="mx-auto w-full max-w-3xl rounded-lg border bg-card p-10">
-      {loading ? (
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="mt-6 text-center text-lg font-semibold">
-            Generating infographic
-          </p>
-          <p className="mt-2 text-center text-sm text-muted-foreground">
-            Creating script, visuals, and narration...
-          </p>
-        </div>
-      ) : (
-        <>
-          <h2 className="mb-7 text-center text-xl font-semibold">
-            Enter Topic or Question
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="e.g. Milky Way Galaxy. History of Rome. How does lightning form?"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                disabled={loading}
-                className="flex-1"
-              />
-              <Button
-                type="submit"
-                disabled={!topic.trim()}
-                className="cursor-pointer transition-transform hover:scale-105"
-              >
-                Generate
-              </Button>
-            </div>
-            
-            <div className="flex items-center justify-center gap-6">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Voice:</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-w-[140px] justify-between"
-                    >
-                      {VOICES.find((v) => v.id === voice)?.name || 'Craig'}
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="min-w-[180px]">
-                    {VOICES.map((voiceOption) => (
-                      <DropdownMenuItem
-                        key={voiceOption.id}
-                        className="flex items-center justify-between gap-2 cursor-pointer"
-                        onSelect={() => setVoice(voiceOption.id)}
-                      >
-                        <span>{voiceOption.name}</span>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 hover:bg-transparent"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePlayVoice(voiceOption.id);
-                          }}
-                        >
-                          <CirclePlay
-                            className={`h-4 w-4 cursor-pointer transition-colors hover:text-primary ${
-                              playingVoice === voiceOption.id
-                                ? 'text-primary'
-                                : ''
-                            }`}
-                          />
-                        </Button>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Aspect:</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-w-[110px] justify-between"
-                    >
-                      <span className="flex items-center gap-2">
-                        {aspectRatio === '16:9' ? (
-                          <Monitor className="h-4 w-4" />
-                        ) : (
-                          <Smartphone className="h-4 w-4" />
-                        )}
-                        {aspectRatio}
-                      </span>
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="min-w-[130px]">
-                    {ASPECT_RATIOS.map((ratio) => (
-                      <DropdownMenuItem
-                        key={ratio.id}
-                        className="flex items-center gap-2 cursor-pointer"
-                        onSelect={() => setAspectRatio(ratio.id)}
-                      >
-                        <ratio.icon className="h-4 w-4" />
-                        <span>{ratio.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+    if (!topic.trim()) {
+      return;
+    }
+
+    await generateSlideshow(false);
+  };
+
+  const handleContinueWithOpenAI = async () => {
+    setShowOverloadDialog(false);
+    await generateSlideshow(true);
+  };
+
+  return (
+    <>
+      <div className="mx-auto w-full max-w-3xl rounded-lg border bg-card p-10">
+        {loading ? (
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="mt-6 text-center text-lg font-semibold">
+              Generating infographic
+            </p>
+            <p className="mt-2 text-center text-sm text-muted-foreground">
+              Creating script, visuals, and narration...
+            </p>
+          </div>
+        ) : (
+          <>
+            <h2 className="mb-7 text-center text-xl font-semibold">
+              Enter Topic or Question
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="e.g. Milky Way Galaxy. History of Rome. How does lightning form?"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  disabled={loading}
+                  className="flex-1"
+                />
+                <Button
+                  type="submit"
+                  disabled={!topic.trim()}
+                  className="cursor-pointer transition-transform hover:scale-105"
+                >
+                  Generate
+                </Button>
               </div>
-            </div>
-          </form>
-        </>
-      )}
-    </div>
+              
+              <div className="flex items-center justify-center gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Voice:</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-w-[140px] justify-between"
+                      >
+                        {VOICES.find((v) => v.id === voice)?.name || 'Craig'}
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="min-w-[180px]">
+                      {VOICES.map((voiceOption) => (
+                        <DropdownMenuItem
+                          key={voiceOption.id}
+                          className="flex items-center justify-between gap-2 cursor-pointer"
+                          onSelect={() => setVoice(voiceOption.id)}
+                        >
+                          <span>{voiceOption.name}</span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 hover:bg-transparent"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlayVoice(voiceOption.id);
+                            }}
+                          >
+                            <CirclePlay
+                              className={`h-4 w-4 cursor-pointer transition-colors hover:text-primary ${
+                                playingVoice === voiceOption.id
+                                  ? 'text-primary'
+                                  : ''
+                              }`}
+                            />
+                          </Button>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Aspect:</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-w-[110px] justify-between"
+                      >
+                        <span className="flex items-center gap-2">
+                          {aspectRatio === '16:9' ? (
+                            <Monitor className="h-4 w-4" />
+                          ) : (
+                            <Smartphone className="h-4 w-4" />
+                          )}
+                          {aspectRatio}
+                        </span>
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="min-w-[130px]">
+                      {ASPECT_RATIOS.map((ratio) => (
+                        <DropdownMenuItem
+                          key={ratio.id}
+                          className="flex items-center gap-2 cursor-pointer"
+                          onSelect={() => setAspectRatio(ratio.id)}
+                        >
+                          <ratio.icon className="h-4 w-4" />
+                          <span>{ratio.name}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+
+      <AlertDialog open={showOverloadDialog} onOpenChange={setShowOverloadDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Google&apos;s Image Model is Busy</AlertDialogTitle>
+            <AlertDialogDescription>
+              Google&apos;s image model is currently overloaded but should be available again shortly. You can continue now using OpenAI&apos;s image model instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleContinueWithOpenAI}>
+              Continue with OpenAI
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

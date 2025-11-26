@@ -43,6 +43,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
     email: string
     avatar?: string
     subscription_tier?: "Pro" | "Ultra" | null
+    monthly_generated_slideshows?: number
   }
   presentations?: Presentation[]
 }
@@ -88,6 +89,7 @@ export function AppSidebar({ user, presentations = [], ...props }: AppSidebarPro
           user={{
             ...resolvedUser,
             avatar: resolvedUser.avatar ?? data.defaultUser.avatar,
+            monthly_generated_slideshows: user?.monthly_generated_slideshows ?? 0,
           }}
         />
       </SidebarFooter>

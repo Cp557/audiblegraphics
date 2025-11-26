@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generateInfographicWithAudio, validateSlideshowTopic } from '@/lib/ai/generate-slideshow';
+import { GeminiOverloadedError } from '@/lib/ai/gemini';
 import { 
   createPresentation, 
   updatePresentationAssets, 
@@ -24,6 +25,8 @@ interface GenerateSlideshowRequest {
   topic: string;
   voice?: string;
   aspectRatio?: '16:9' | '9:16';
+  /** Skip Gemini and use OpenAI directly for image generation */
+  forceOpenAI?: boolean;
 }
 
 /**
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = (await request.json()) as GenerateSlideshowRequest;
-    const { topic, voice, aspectRatio = '16:9' } = body;
+    const { topic, voice, aspectRatio = '16:9', forceOpenAI = false } = body;
 
     if (!topic || typeof topic !== 'string' || topic.trim() === '') {
       return NextResponse.json(
@@ -154,6 +157,7 @@ export async function POST(request: NextRequest) {
         presentationId: presentation.id,
         voice,
         aspectRatio,
+        forceOpenAI,
       });
 
       // Step 3: Save assets to database
@@ -199,6 +203,17 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('[API] Error generating infographic:', error);
+
+    // Handle Gemini overloaded error - prompt user for OpenAI fallback
+    if (error instanceof GeminiOverloadedError) {
+      return NextResponse.json(
+        {
+          error: 'Google\'s image model is currently busy',
+          geminiOverloaded: true,
+        },
+        { status: 503 }
+      );
+    }
 
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';

@@ -29,6 +29,8 @@ export interface GenerationOptions {
   presentationId?: string;
   voice?: string;
   aspectRatio?: '16:9' | '9:16';
+  /** Skip Gemini and use OpenAI directly for image generation */
+  forceOpenAI?: boolean;
 }
 
 /**
