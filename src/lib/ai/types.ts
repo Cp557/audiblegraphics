@@ -28,6 +28,7 @@ export interface GenerationOptions {
   userId?: string;
   presentationId?: string;
   voice?: string;
+  aspectRatio?: '16:9' | '9:16';
 }
 
 /**

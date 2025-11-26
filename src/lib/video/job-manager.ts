@@ -45,11 +45,15 @@ export async function processVideoJob(
     // Create temp file for output video in our managed temp directory
     outputPath = path.join(getTempVideosDir(), `${jobId}.mp4`);
 
+    // Determine aspect ratio from presentation
+    const aspectRatio = (presentation.aspect_ratio === '9:16' ? '9:16' : '16:9') as '16:9' | '9:16';
+    
     // Generate video
     await generatePresentationVideo(
       presentation.slides,
       outputPath,
-      () => {} // Progress callback (no-op for production)
+      () => {}, // Progress callback (no-op for production)
+      aspectRatio
     );
 
     // Check if output file exists

@@ -23,6 +23,7 @@ export const maxDuration = 300;
 interface GenerateSlideshowRequest {
   topic: string;
   voice?: string;
+  aspectRatio?: '16:9' | '9:16';
 }
 
 /**
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = (await request.json()) as GenerateSlideshowRequest;
-    const { topic, voice } = body;
+    const { topic, voice, aspectRatio = '16:9' } = body;
 
     if (!topic || typeof topic !== 'string' || topic.trim() === '') {
       return NextResponse.json(
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Create presentation record
-    const presentation = await createPresentation(user.id, topic);
+    const presentation = await createPresentation(user.id, topic, aspectRatio);
 
     let result;
     try {
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         presentationId: presentation.id,
         voice,
+        aspectRatio,
       });
 
       // Step 3: Save assets to database

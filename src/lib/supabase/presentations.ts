@@ -19,6 +19,7 @@ export interface Presentation {
   audio_url: string | null;
   speaker_notes: string | null;
   video_url: string | null;
+  aspect_ratio: string | null;
   created_at: string;
 }
 
@@ -41,17 +42,20 @@ export interface PresentationWithSlides extends Presentation {
  * Create a new presentation entry
  * @param userId - User ID
  * @param title - Presentation title
+ * @param aspectRatio - Aspect ratio (16:9 or 9:16)
  * @returns Created presentation
  */
 export async function createPresentation(
   userId: string,
-  title: string
+  title: string,
+  aspectRatio: string = '16:9'
 ): Promise<Presentation> {
   const { data, error } = await supabaseAdmin
     .from('presentations')
     .insert({
       user_id: userId,
       title,
+      aspect_ratio: aspectRatio,
     })
     .select()
     .single();

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, CirclePlay, ChevronDown } from 'lucide-react';
+import { Loader2, CirclePlay, ChevronDown, Monitor, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -23,9 +23,15 @@ const VOICES = [
   { id: 'Olivia', name: 'Olivia' },
 ] as const;
 
+const ASPECT_RATIOS = [
+  { id: '16:9', name: '16:9', icon: Monitor },
+  { id: '9:16', name: '9:16', icon: Smartphone },
+] as const;
+
 export function SlideshowInput() {
   const [topic, setTopic] = useState('');
   const [voice, setVoice] = useState('Craig');
+  const [aspectRatio, setAspectRatio] = useState('16:9');
   const [loading, setLoading] = useState(false);
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -74,7 +80,7 @@ export function SlideshowInput() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ topic, voice }),
+        body: JSON.stringify({ topic, voice, aspectRatio }),
       });
 
       const data = await response.json();
@@ -157,49 +163,86 @@ export function SlideshowInput() {
               </Button>
             </div>
             
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-sm text-muted-foreground">Voice:</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-w-[140px] justify-between"
-                  >
-                    {VOICES.find((v) => v.id === voice)?.name || 'Craig'}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="min-w-[180px]">
-                  {VOICES.map((voiceOption) => (
-                    <DropdownMenuItem
-                      key={voiceOption.id}
-                      className="flex items-center justify-between gap-2 cursor-pointer"
-                      onSelect={() => setVoice(voiceOption.id)}
+            <div className="flex items-center justify-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Voice:</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-w-[140px] justify-between"
                     >
-                      <span>{voiceOption.name}</span>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0 hover:bg-transparent"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlayVoice(voiceOption.id);
-                        }}
+                      {VOICES.find((v) => v.id === voice)?.name || 'Craig'}
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="min-w-[180px]">
+                    {VOICES.map((voiceOption) => (
+                      <DropdownMenuItem
+                        key={voiceOption.id}
+                        className="flex items-center justify-between gap-2 cursor-pointer"
+                        onSelect={() => setVoice(voiceOption.id)}
                       >
-                        <CirclePlay
-                          className={`h-4 w-4 cursor-pointer transition-colors hover:text-primary ${
-                            playingVoice === voiceOption.id
-                              ? 'text-primary'
-                              : ''
-                          }`}
-                        />
-                      </Button>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                        <span>{voiceOption.name}</span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-transparent"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayVoice(voiceOption.id);
+                          }}
+                        >
+                          <CirclePlay
+                            className={`h-4 w-4 cursor-pointer transition-colors hover:text-primary ${
+                              playingVoice === voiceOption.id
+                                ? 'text-primary'
+                                : ''
+                            }`}
+                          />
+                        </Button>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Aspect:</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-w-[110px] justify-between"
+                    >
+                      <span className="flex items-center gap-2">
+                        {aspectRatio === '16:9' ? (
+                          <Monitor className="h-4 w-4" />
+                        ) : (
+                          <Smartphone className="h-4 w-4" />
+                        )}
+                        {aspectRatio}
+                      </span>
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="min-w-[130px]">
+                    {ASPECT_RATIOS.map((ratio) => (
+                      <DropdownMenuItem
+                        key={ratio.id}
+                        className="flex items-center gap-2 cursor-pointer"
+                        onSelect={() => setAspectRatio(ratio.id)}
+                      >
+                        <ratio.icon className="h-4 w-4" />
+                        <span>{ratio.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </form>
         </>

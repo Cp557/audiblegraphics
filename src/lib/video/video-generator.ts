@@ -1,7 +1,7 @@
 import ffmpeg from 'fluent-ffmpeg';
 import { ffmpegPath, ffprobePath } from './ffmpeg-config';
 import { Slide } from '@/lib/supabase/presentations';
-import { createSlideFrame } from './frame-generator';
+import { createSlideFrame, getFrameDimensions } from './frame-generator';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -47,10 +47,12 @@ async function downloadFile(url: string, destPath: string): Promise<void> {
 export async function generatePresentationVideo(
   slides: Slide[],
   outputPath: string,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  aspectRatio: '16:9' | '9:16' = '16:9'
 ): Promise<string> {
   console.log(`[generatePresentationVideo] Starting with ${slides?.length || 0} slides`);
   console.log(`[generatePresentationVideo] Output path: ${outputPath}`);
+  console.log(`[generatePresentationVideo] Aspect ratio: ${aspectRatio}`);
   
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'video-gen-'));
   console.log(`[generatePresentationVideo] Temp dir: ${tempDir}`);
@@ -79,7 +81,7 @@ export async function generatePresentationVideo(
       }
 
       const segmentPath = path.join(tempDir, `segment_${i}.mp4`);
-      await generateSlideSegment(slide, segmentPath, tempDir);
+      await generateSlideSegment(slide, segmentPath, tempDir, aspectRatio);
       segmentPaths.push(segmentPath);
     }
 
@@ -118,15 +120,21 @@ export async function generatePresentationVideo(
 async function generateSlideSegment(
   slide: Slide,
   outputPath: string,
-  tempDir: string
+  tempDir: string,
+  aspectRatio: '16:9' | '9:16' = '16:9'
 ): Promise<void> {
   console.log(`[generateSlideSegment] Processing slide: ${slide.id}`);
   console.log(`[generateSlideSegment] Slide image_url: ${slide.image_url?.substring(0, 100)}...`);
   console.log(`[generateSlideSegment] Slide audio_url: ${slide.audio_url?.substring(0, 100)}...`);
+  console.log(`[generateSlideSegment] Aspect ratio: ${aspectRatio}`);
+  
+  // Get dimensions based on aspect ratio
+  const { width, height } = getFrameDimensions(aspectRatio);
+  const sizeString = `${width}x${height}`;
   
   // 1. Generate the slide image frame
   console.log(`[generateSlideSegment] Creating slide frame...`);
-  const frameBuffer = await createSlideFrame({ slide });
+  const frameBuffer = await createSlideFrame({ slide, aspectRatio });
   const imagePath = path.join(tempDir, `frame_${uuidv4()}.png`);
   await fs.writeFile(imagePath, frameBuffer);
   console.log(`[generateSlideSegment] Frame saved to: ${imagePath}`);
@@ -170,8 +178,8 @@ async function generateSlideSegment(
           '-shortest',
           '-movflags +faststart'
         ])
-        // Force 16:9 aspect ratio if not already
-        .size('1280x720');
+        // Use dynamic size based on aspect ratio
+        .size(sizeString);
     } else {
       // Silent slide case (default 5 seconds)
       const duration = 5;
@@ -186,7 +194,7 @@ async function generateSlideSegment(
           '-pix_fmt yuv420p',
           '-movflags +faststart'
         ])
-        .size('1280x720');
+        .size(sizeString);
     }
 
     command

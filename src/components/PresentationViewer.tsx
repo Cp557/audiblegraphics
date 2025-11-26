@@ -93,7 +93,7 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
         
         {/* Infographic Image Column */}
         <div className="relative w-full flex-1 min-h-0 flex justify-center">
-            <div className="relative h-full w-auto aspect-[16/9] rounded-xl overflow-hidden border shadow-lg border-gray-200">
+            <div className={`relative h-full w-auto ${presentation.aspect_ratio === '9:16' ? 'aspect-[9/16]' : 'aspect-[16/9]'} rounded-xl overflow-hidden border shadow-lg border-gray-200`}>
             {image_url ? (
               <Image
                 src={image_url}

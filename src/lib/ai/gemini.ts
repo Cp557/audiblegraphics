@@ -209,12 +209,13 @@ export async function generateImage(
   const client = createGeminiClient();
 
   const enhancedPrompt = prompt.trim();
+  const aspectRatio = options.aspectRatio || '16:9';
 
   try {
     const config = {
       responseModalities: ['IMAGE', 'TEXT'] as any, 
       imageConfig: {
-        aspectRatio: '16:9',
+        aspectRatio,
         imageSize: '1K',
       },
     };
@@ -285,7 +286,7 @@ export async function generateImage(
         const config = {
           responseModalities: ['IMAGE', 'TEXT'] as any, 
           imageConfig: {
-            aspectRatio: '16:9',
+            aspectRatio,
             imageSize: '1K',
           },
         };

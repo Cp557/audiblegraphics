@@ -146,7 +146,6 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
   const handleDownload = async () => {
     try {
       setStatus('pending');
-      setError(null);
       setProgress(0);
 
       // Start video generation (or get cached video)

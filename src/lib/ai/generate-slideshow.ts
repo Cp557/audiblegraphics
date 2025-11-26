@@ -34,7 +34,8 @@ export async function generateInfographicWithAudio(
     outputDir = path.join(os.tmpdir(), 'audible-slides-gen'),
     userId,
     presentationId,
-    voice
+    voice,
+    aspectRatio = '16:9'
   } = options;
 
   // Step 1: Validate the topic
@@ -59,7 +60,7 @@ export async function generateInfographicWithAudio(
 
   await Promise.all([
     generateAudioFromSections(content.script_sections, audioPath, voice ? { voice } : {}),
-    generateImage(content.image_prompt, imagePath, { imageSize: '1K', aspectRatio: '16:9' })
+    generateImage(content.image_prompt, imagePath, { imageSize: '1K', aspectRatio })
   ]);
 
   // Step 5: Upload

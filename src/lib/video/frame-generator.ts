@@ -1,12 +1,28 @@
 import sharp from 'sharp';
 import { Slide } from '@/lib/supabase/presentations';
 
-const FRAME_WIDTH = 1280;
-const FRAME_HEIGHT = 720;
+// Default dimensions for 16:9
+const FRAME_WIDTH_16_9 = 1280;
+const FRAME_HEIGHT_16_9 = 720;
+
+// Dimensions for 9:16 (vertical/portrait)
+const FRAME_WIDTH_9_16 = 720;
+const FRAME_HEIGHT_9_16 = 1280;
 
 interface SlideFrameOptions {
   slide: Slide;
   imageBuffer?: Buffer;
+  aspectRatio?: '16:9' | '9:16';
+}
+
+/**
+ * Get frame dimensions based on aspect ratio
+ */
+export function getFrameDimensions(aspectRatio: string = '16:9'): { width: number; height: number } {
+  if (aspectRatio === '9:16') {
+    return { width: FRAME_WIDTH_9_16, height: FRAME_HEIGHT_9_16 };
+  }
+  return { width: FRAME_WIDTH_16_9, height: FRAME_HEIGHT_16_9 };
 }
 
 /**
@@ -26,7 +42,8 @@ async function downloadImage(url: string): Promise<Buffer> {
  * Layout: Image only (centered/contain)
  */
 export async function createSlideFrame(options: SlideFrameOptions): Promise<Buffer> {
-  const { slide } = options;
+  const { slide, aspectRatio = '16:9' } = options;
+  const { width: FRAME_WIDTH, height: FRAME_HEIGHT } = getFrameDimensions(aspectRatio);
 
   // Set colors for light mode
   const backgroundColor = { r: 255, g: 255, b: 255, alpha: 1 }; // White
@@ -89,6 +106,6 @@ export async function createSlideFrame(options: SlideFrameOptions): Promise<Buff
 /**
  * Creates a placeholder frame for slides without audio
  */
-export async function createPlaceholderFrame(slide: Slide): Promise<Buffer> {
-  return createSlideFrame({ slide });
+export async function createPlaceholderFrame(slide: Slide, aspectRatio?: '16:9' | '9:16'): Promise<Buffer> {
+  return createSlideFrame({ slide, aspectRatio });
 }
