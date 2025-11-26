@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { getUserFriendlyError } from '@/lib/utils/error-messages';
 
 interface DownloadVideoButtonProps {
   presentationId: string;
@@ -29,7 +31,6 @@ interface VideoStartResponse {
 export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps) {
   const [status, setStatus] = useState<JobStatus>('idle');
   const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup polling on unmount
@@ -72,12 +73,11 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
       }, 2000);
     } catch (downloadError) {
       console.error('Error downloading video file:', downloadError);
-      setStatus('failed');
-      setError('Failed to download video file');
-      setTimeout(() => {
-        setStatus('idle');
-        setError(null);
-      }, 5000);
+      const friendlyError = getUserFriendlyError(downloadError);
+      toast.error(friendlyError.title, {
+        description: friendlyError.description,
+      });
+      setStatus('idle');
     }
   };
 
@@ -132,11 +132,12 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
         
         if (status === 'processing' || status === 'pending') {
           setStatus('failed');
-          setError('Video generation timed out');
+          toast.error('Video Download Failed', {
+            description: 'Video generation timed out. Please try again later.',
+          });
           setTimeout(() => {
             setStatus('idle');
-            setError(null);
-          }, 5000);
+          }, 3000);
         }
       }
     }, 5 * 60 * 1000);
@@ -174,14 +175,11 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
       
     } catch (err) {
       console.error('Error starting video generation:', err);
-      setStatus('failed');
-      setError(err instanceof Error ? err.message : 'Failed to generate video');
-
-      // Reset after showing error
-      setTimeout(() => {
-        setStatus('idle');
-        setError(null);
-      }, 5000);
+      const friendlyError = getUserFriendlyError(err);
+      toast.error(friendlyError.title, {
+        description: friendlyError.description,
+      });
+      setStatus('idle');
     }
   };
 
@@ -232,10 +230,6 @@ export function DownloadVideoButton({ presentationId }: DownloadVideoButtonProps
           </>
         )}
       </Button>
-
-      {error && (
-        <span className="text-sm text-red-500">{error}</span>
-      )}
     </div>
   );
 }

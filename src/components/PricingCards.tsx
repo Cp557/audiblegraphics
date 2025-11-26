@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { getUserFriendlyError } from '@/lib/utils/error-messages';
 
 interface PricingCardsProps {
   isLoggedIn: boolean;
@@ -44,9 +46,15 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
         return;
       }
 
-      console.error("Unable to create checkout session:", data?.error);
+      const friendlyError = getUserFriendlyError(data?.error || 'checkout session');
+      toast.error(friendlyError.title, {
+        description: friendlyError.description,
+      });
     } catch (error) {
       console.error("Error starting checkout:", error);
+      toast.error('Checkout Unavailable', {
+        description: 'Unable to start checkout. Please try again later.',
+      });
     } finally {
       setIsUpgrading(false);
     }
@@ -66,7 +74,10 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
       const data = await response.json();
       
       if (data.error) {
-        console.error(data.error);
+        const friendlyError = getUserFriendlyError(data.error);
+        toast.error(friendlyError.title, {
+          description: friendlyError.description,
+        });
         return;
       }
 
@@ -75,6 +86,9 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
       }
     } catch (error) {
       console.error('Error:', error);
+      toast.error('Portal Unavailable', {
+        description: 'Unable to open the subscription portal. Please try again.',
+      });
     } finally {
       setIsManagingSubscription(false);
     }

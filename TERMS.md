@@ -64,5 +64,5 @@ To the fullest extent permitted by law, AudibleGraphics shall not be liable for 
 We may modify these Terms at any time. We will notify you of material changes by posting the new Terms on this page. Your continued use of the Service after any such change constitutes your acceptance of the new Terms.
 
 ## 11. Contact Us
-If you have any questions about these Terms, please contact us at **Contact@audibleslides.com**.
+If you have any questions about these Terms, please contact us at **Contact@audiblegraphics.com**.
 

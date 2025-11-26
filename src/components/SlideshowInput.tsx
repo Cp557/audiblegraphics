@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Loader2, CirclePlay, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import { getUserFriendlyError } from '@/lib/utils/error-messages';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +27,6 @@ export function SlideshowInput() {
   const [topic, setTopic] = useState('');
   const [voice, setVoice] = useState('Craig');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
@@ -66,7 +67,6 @@ export function SlideshowInput() {
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch('/api/generate-slideshow', {
@@ -80,11 +80,23 @@ export function SlideshowInput() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(
-          typeof data?.error === 'string'
-            ? data.error
-            : 'Something went wrong while generating the infographic. Please try again.'
-        );
+        const errorMsg = typeof data?.error === 'string' ? data.error : 'Unknown error';
+        const friendlyError = getUserFriendlyError(errorMsg);
+        
+        toast.error(friendlyError.title, {
+          description: friendlyError.description,
+          action: friendlyError.action ? {
+            label: friendlyError.action,
+            onClick: () => {
+              if (friendlyError.action === 'Sign In') {
+                router.push('/sign-in');
+              } else if (friendlyError.action === 'Upgrade Plan') {
+                router.push('/dashboard#pricing');
+              }
+            },
+          } : undefined,
+        });
+        
         setLoading(false);
         return;
       }
@@ -101,7 +113,10 @@ export function SlideshowInput() {
         router.push(`/dashboard/${data.presentation_id}`);
       }
     } catch {
-      setError('Unable to reach the server. Please check your connection and try again.');
+      const friendlyError = getUserFriendlyError('Failed to fetch');
+      toast.error(friendlyError.title, {
+        description: friendlyError.description,
+      });
       setLoading(false);
     }
   };
@@ -187,11 +202,6 @@ export function SlideshowInput() {
               </DropdownMenu>
             </div>
           </form>
-          {error && (
-            <p className="mt-4 text-center text-sm text-red-500">
-              {error}
-            </p>
-          )}
         </>
       )}
     </div>
