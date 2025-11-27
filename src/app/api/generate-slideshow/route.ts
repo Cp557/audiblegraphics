@@ -117,6 +117,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (topic.length > 250) {
+      return NextResponse.json(
+        { error: 'Topic must be 250 characters or less' },
+        { status: 400 }
+      );
+    }
+
     // Validate API keys are configured
     if (!process.env.GEMINI_API_KEY) {
       console.error('GEMINI_API_KEY is not configured');

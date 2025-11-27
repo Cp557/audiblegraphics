@@ -181,6 +181,7 @@ export function SlideshowInput() {
                   onChange={(e) => setTopic(e.target.value)}
                   disabled={loading}
                   className="flex-1"
+                  maxLength={250}
                 />
                 <Button
                   type="submit"
