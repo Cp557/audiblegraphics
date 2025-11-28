@@ -91,6 +91,13 @@ const HomePage = () => {
             <p className="text-lg text-gray-600 max-w-2xl mt-4">
               Simply enter a topic and AudibleGraphics will generate an infographic with engaging visuals and narration.
             </p>
+            {!loading && !isLoggedIn && (
+              <Link href="/sign-in">
+                <Button className="mt-6 h-11 px-8 text-base bg-[#4A90E2] hover:bg-[#3a7bc8]">
+                  Try for free today
+                </Button>
+              </Link>
+            )}
           </div>
         </section>
 
