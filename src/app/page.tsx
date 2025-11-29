@@ -85,15 +85,30 @@ const HomePage = () => {
 
       <main>
         {/* Hero Section */}
-        <section className="pt-16 pb-16 bg-[#FEFEFD]">
+        <section className="pt-16 pb-6 bg-[#FEFEFD]">
           <div className="max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Generate Narrated Infographics in Seconds</h2>
             <p className="text-lg text-gray-600 max-w-2xl mt-4">
               Simply enter a topic and AudibleGraphics will generate an infographic with engaging visuals and narration.
             </p>
+          </div>
+        </section>
+
+        {/* Demo Video Section */}
+        <section className="pt-6 pb-12 bg-[#FEFEFD]">
+          <div className="max-w-5xl mx-auto px-6 flex flex-col items-center">
+            <video 
+              className="w-full rounded-xl shadow-lg"
+              src="/vid.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+            />
             {!loading && !isLoggedIn && (
               <Link href="/sign-in">
-                <Button className="mt-6 h-11 px-8 text-base bg-[#4A90E2] hover:bg-[#3a7bc8]">
+                <Button className="mt-8 h-11 px-8 text-base bg-[#4A90E2] hover:bg-[#3a7bc8]">
                   Try for free today
                 </Button>
               </Link>
@@ -111,7 +126,16 @@ const HomePage = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Features</h2>
             </div>
             
-            <div className="grid gap-8 md:grid-cols-3">
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Aspect Ratios')} onMouseLeave={(e) => handleHover(e, false, 'Features - Aspect Ratios')}>
+                <CardHeader>
+                  <CardTitle>Multiple Formats</CardTitle>
+                  <CardDescription className="mt-2">
+                    Generate images in 9:16 (portrait) and 16:9 (landscape) aspect ratios.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
               <Card className="transform-gpu will-change-transform" onMouseEnter={(e) => handleHover(e, true, 'Features - Custom Voices')} onMouseLeave={(e) => handleHover(e, false, 'Features - Custom Voices')}>
                 <CardHeader>
                   <CardTitle>Custom Voices</CardTitle>
@@ -134,7 +158,7 @@ const HomePage = () => {
                 <CardHeader>
                   <CardTitle>Export as MP4</CardTitle>
                   <CardDescription className="mt-2">
-                    Download your infographics as MP4 videos ready to share on any platform.
+                    Download your infographics as ready to share MP4 videos.
                   </CardDescription>
                 </CardHeader>
               </Card>
