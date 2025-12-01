@@ -195,7 +195,14 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
       - Use a clean, modern, vector-art or flat-design style.
       - Organize the layout logically to flow with the narrative.
       - Use professional color palettes and clear iconography.
-      - Try to use minimal text and rely on visuals and icons. If you do include text, use brief lables. Do NOT inlcude any body text.
+      
+      TEXT RULES (CRITICAL):
+      - STRONGLY PREFER icons, illustrations, and visual metaphors over text.
+      - If you MUST include any text, follow these rules strictly:
+        1. Use ONLY short headlines and captions
+        2. Make ALL text large 
+        4. NO paragraphs, NO sentences, NO body text, NO small captions
+      - When in doubt, use an ICON instead of text.
     `.trim();
 
     return {
