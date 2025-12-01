@@ -9,8 +9,8 @@ export interface SubscriptionData {
 
 export const SLIDE_LIMITS = {
   FREE: 1,
-  PRO: 50,
-  ULTRA: 100,
+  PRO: 30,
+  ULTRA: 75,
 } as const;
 
 export function getSlideshowLimit(tier?: string | null): number {

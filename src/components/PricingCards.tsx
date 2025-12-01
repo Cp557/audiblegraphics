@@ -126,14 +126,14 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
         <CardHeader className="text-center space-y-4">
           <div>
             <CardTitle className="text-2xl mb-2">Pro Plan</CardTitle>
-            <p className="text-4xl font-bold text-[#4A90E2]">$14.99</p>
+            <p className="text-4xl font-bold text-[#4A90E2]">$9.99</p>
             <p className="text-sm text-gray-600">per month</p>
           </div>
         </CardHeader>
 
         <CardContent className="flex flex-col flex-1">
           <ul className="text-sm text-gray-600 space-y-2">
-            <li>✔︎ 50 infographics per month</li>
+            <li>✔︎ 30 infographics per month</li>
             <li>✔︎ High-quality images & audio</li>
             <li>✔︎ Multiple voice options</li>
             <li>✔︎ Download as video</li>
@@ -186,14 +186,14 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
         <CardHeader className="text-center space-y-4">
           <div>
             <CardTitle className="text-2xl mb-2">Ultra Plan</CardTitle>
-            <p className="text-4xl font-bold text-[#4A90E2]">$24.99</p>
+            <p className="text-4xl font-bold text-[#4A90E2]">$19.99</p>
             <p className="text-sm text-gray-600">per month</p>
           </div>
         </CardHeader>
 
         <CardContent className="flex flex-col flex-1">
           <ul className="text-sm text-gray-600 space-y-2">
-            <li>✔︎ 100 infographics per month</li>
+            <li>✔︎ 75 infographics per month</li>
             <li>✔︎ High-quality images & audio</li>
             <li>✔︎ Multiple voice options</li>
             <li>✔︎ Download as video</li>
@@ -227,7 +227,7 @@ export default function PricingCards({ isLoggedIn, userEmail, subscriptionTier }
                   {isManagingSubscription ? "Loading..." : "Upgrade to Ultra"}
                 </Button>
                 <p className="text-xs text-center text-gray-500 mt-2">
-                  +$10/month • Get 50 more credits instantly
+                  +$10/month • Get 45 more credits instantly
                 </p>
               </>
             )}
