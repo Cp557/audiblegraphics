@@ -77,6 +77,12 @@ const ERROR_MAP: Record<string, UserFriendlyError> = {
     title: 'Network Issue',
     description: 'A network error occurred. Please check your connection and try again.',
   },
+  
+  // Content safety filter
+  'Google blocked this image': {
+    title: 'Content Blocked',
+    description: 'Google\'s image safety filters blocked this topic. Try rephrasing or choose a different topic.',
+  },
 };
 
 // Default fallback error

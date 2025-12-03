@@ -10,7 +10,8 @@ import path from 'path';
 import type { InfographicData, ImageOptions } from './types';
 import {
   validateTopicOpenAI,
-  generateImageOpenAI
+  generateImageOpenAI,
+  generateInfographicContentOpenAI
 } from './openai';
 
 /**
@@ -21,6 +22,17 @@ export class GeminiOverloadedError extends Error {
   constructor(message = 'Google\'s image model is currently overloaded. Please try again later or use OpenAI.') {
     super(message);
     this.name = 'GeminiOverloadedError';
+  }
+}
+
+/**
+ * Custom error thrown when Gemini blocks image generation due to safety filters
+ * This allows the caller to prompt the user to try OpenAI instead
+ */
+export class GeminiImageSafetyError extends Error {
+  constructor(message = 'Gemini blocked this image due to content safety filters. The topic may contain sensitive historical or violent content. Try using OpenAI instead.') {
+    super(message);
+    this.name = 'GeminiImageSafetyError';
   }
 }
 
@@ -114,12 +126,12 @@ Output:0
 /**
  * Generate infographic content (Script + Image Prompt)
  * Step 1: Generate Script (JSON with sections)
- * Step 2: Generate Image Prompt based on Script
+ * Step 2: Construct Image Prompt from the script
  */
 export async function generateInfographicContent(topic: string): Promise<InfographicData> {
   const client = createGeminiClient();
 
-  // 1. Generate Speaker Notes in Sections
+  // Generate Speaker Notes in Sections
   const scriptPrompt = `
     You are an expert educational content creator.
     Create a compelling, fun, and engaging narration script about: "${topic}".
@@ -144,10 +156,9 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
     \`\`\`json
     {
       "script_sections": [
-        "Today we are going to talk about the *fascinating* history of Rome!",
-        "The Roman Republic was established in 509 BC — a pivotal moment in history.",
-        "However, internal strife and civil wars eventually weakened the republic.",
-        "In conclusion, Rome's legacy continues to influence us today."
+        "Today we are going to talk about the *fascinating* history of Rome...",
+        "The Roman Republic was established in 509 BC — a pivotal moment in history...",
+        "In conclusion, Rome's legacy continues to influence us today..."
       ]
     }
     \`\`\`
@@ -183,8 +194,10 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
     // (Pauses are now handled by inserting silence audio files between chunks)
     const speaker_notes = sections.join('\n\n');
 
-    // 2. Construct Image Prompt directly from the notes
+    // Construct Image Prompt directly from the notes
     const image_prompt = `
+      CONTEXT: This is for an EDUCATIONAL infographic. Images that might containt sensitive topics are acceptable since they are for educational purposes.
+      
       Create an engaging infographic based on the following narration script.
       
       SCRIPT:
@@ -199,9 +212,9 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
       TEXT RULES (CRITICAL):
       - STRONGLY PREFER icons, illustrations, and visual metaphors over text.
       - If you MUST include any text, follow these rules strictly:
-        1. Use ONLY short headlines and captions
-        2. Make ALL text large 
-        4. NO paragraphs, NO sentences, NO body text, NO small captions
+        1. Use ONLY short headlines and labels
+        2. Make ALL text large and readable
+        3. NO paragraphs, NO sentences, NO body text
       - When in doubt, use an ICON instead of text.
     `.trim();
 
@@ -210,8 +223,16 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
       script_sections: sections,
       image_prompt
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating infographic content:', error);
+    
+    // Fall back to OpenAI on rate limit or overload errors
+    if (error?.status === 429 || error?.status === 500 || error?.status === 503 ||
+        error?.code === 429 || error?.code === 500 || error?.code === 503) {
+      console.warn(`Gemini text generation failed (${error.status || error.code}), switching to OpenAI...`);
+      return generateInfographicContentOpenAI(topic);
+    }
+    
     throw error;
   }
 }
@@ -264,6 +285,13 @@ export async function generateImage(
     let mimeType = 'image/jpeg';
 
     for await (const chunk of response) {
+      // Check for safety filter block
+      const finishReason = chunk.candidates?.[0]?.finishReason;
+      if (finishReason === 'IMAGE_SAFETY') {
+        console.error('Image generation blocked by IMAGE_SAFETY filter');
+        throw new GeminiImageSafetyError();
+      }
+
       if (!chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData) {
         continue;
       }
@@ -276,13 +304,18 @@ export async function generateImage(
     }
 
     if (!imageBuffer) {
-      console.error('No image generated for prompt');
-      return '';
+      console.error('No image generated for prompt - possibly blocked by safety filter');
+      throw new GeminiImageSafetyError('No image was generated. This may be due to content safety filters.');
     }
 
     await writeFile(outputPath, imageBuffer);
     return outputPath;
   } catch (error: any) {
+    // Re-throw our custom errors directly so callers can handle them
+    if (error instanceof GeminiImageSafetyError || error instanceof GeminiOverloadedError) {
+      throw error;
+    }
+
     // Log full error details once so we can debug 500s from Gemini
     console.error('Gemini generateImage raw error:', {
       status: error?.status,

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generateInfographicWithAudio, validateSlideshowTopic } from '@/lib/ai/generate-slideshow';
-import { GeminiOverloadedError } from '@/lib/ai/gemini';
+import { GeminiOverloadedError, GeminiImageSafetyError } from '@/lib/ai/gemini';
 import { 
   createPresentation, 
   updatePresentationAssets, 
@@ -215,10 +215,21 @@ export async function POST(request: NextRequest) {
     if (error instanceof GeminiOverloadedError) {
       return NextResponse.json(
         {
-          error: 'Google\'s image model is currently busy',
+          error: 'Google\'s AI model is currently busy. Please try again later.',
           geminiOverloaded: true,
         },
         { status: 503 }
+      );
+    }
+
+    // Handle Gemini image safety filter block
+    if (error instanceof GeminiImageSafetyError) {
+      return NextResponse.json(
+        {
+          error: 'Google blocked this image due to content safety filters. Please try a different topic or rephrase your request.',
+          imageSafetyBlocked: true,
+        },
+        { status: 422 }
       );
     }
 

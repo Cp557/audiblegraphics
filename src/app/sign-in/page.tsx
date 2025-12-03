@@ -83,7 +83,7 @@ function SignInForm() {
         return;
       }
 
-      setSuccess('Account created! Please check your email to verify your account.');
+      setSuccess('Account created! Please check your email to verify your account. If you don\'t see it, check your spam folder.');
       setEmail('');
       setPassword('');
     } catch (err: any) {
@@ -115,7 +115,7 @@ function SignInForm() {
 
       if (error) throw error;
 
-      setSuccess('Confirmation email sent! Please check your inbox.');
+      setSuccess('Confirmation email sent! Please check your inbox. If you don\'t see it, check your spam folder.');
       setShowResend(false);
     } catch (err: any) {
       setError(err.message || 'Failed to resend confirmation email');
