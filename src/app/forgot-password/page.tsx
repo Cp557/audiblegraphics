@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
 
       if (error) throw error;
 
-      setSuccess('Check your email for a password reset link.');
+      setSuccess('Check your email for a password reset link. If you don\'t see it, check your spam folder.');
       setEmail('');
     } catch (err: any) {
       setError(err.message || 'An error occurred');
