@@ -146,7 +146,7 @@ export async function updatePresentationTitle(slug: string, newTitle: string): P
 }
 
 // No-op: has_video is derived from the filesystem
-export async function updatePresentationVideoFlag(_slug: string, _hasVideo: boolean): Promise<void> {}
+export async function updatePresentationVideoFlag(): Promise<void> {}
 
 export async function deletePresentation(slug: string): Promise<void> {
   await fs.rm(path.join(UPLOADS_DIR, slug), { recursive: true, force: true });

@@ -1,19 +1,23 @@
 # AudibleGraphics
 
-Generate narrated infographics locally using Google Gemini for images and Inworld for text-to-speech. Enter any topic and get a full-screen infographic with an AI-generated narration script and audio.
+Generate narrated infographics locally using Google Gemini for images, scripts, and text-to-speech. Enter any topic and get a full-screen infographic with an AI-generated narration script and audio.
+
+![AudibleGraphics screenshot](public/screenshot.png)
 
 ## Features
 
-- **AI-generated infographics** — Gemini generates the image, script, and narration from a single topic or question
-- **Text-to-speech narration** — Inworld voices bring the infographic to life
-- **Multiple aspect ratios** — 16:9 (landscape) and 9:16 (portrait)
-- **6 voice options** — Craig, Dennis, Alex, Deborah, Hades, Olivia
-- **MP4 export** — Download your infographic as a shareable video
-- **Local storage** — Everything is saved locally, no cloud accounts needed
+- **AI-generated infographics** - Gemini generates the image, script, and narration from a single topic or question
+- **Text-to-speech narration** - Gemini voices bring the infographic to life
+- **Multiple aspect ratios** - 16:9 (landscape) and 9:16 (portrait)
+- **4 voice options** - Achird, Aoede, Charon, Laomedeia
+- **MP4 export** - Download your infographic as a shareable video
+- **Local storage** - Everything is saved locally, no cloud accounts needed
 
 ## Prerequisites
 
-- **Node.js 18+**
+- **Node.js 20.9+** (required by Next.js 16)
+- **npm** (bundled with Node.js)
+- **Windows, macOS, or Linux**. FFmpeg is bundled through npm dependencies; no separate system FFmpeg install is required.
 
 ## Setup
 
@@ -28,15 +32,19 @@ Generate narrated infographics locally using Google Gemini for images and Inworl
    npm install
    ```
 
-3. **Add your API keys**
+3. **Add your API key**
 
-   Open `.env` and fill in your keys:
+   Open `.env` and fill in your key. The Google account or project behind this key must have billing enabled for Gemini API usage.
    ```
    GEMINI_API_KEY=your-gemini-api-key-here
-   INWORLD_API_KEY=your-inworld-api-key-here
    ```
 
-4. **Start the app**
+4. **Generate voice samples**
+   ```bash
+   npm run generate:voice-samples
+   ```
+
+5. **Start the app**
    ```bash
    npm run dev
    ```
@@ -44,14 +52,13 @@ Generate narrated infographics locally using Google Gemini for images and Inworl
 
 ## Getting API Keys
 
-- **Gemini** — [aistudio.google.com](https://aistudio.google.com) → Get API key (free tier available)
-- **Inworld** — [inworld.ai](https://inworld.ai) → Create account → API keys
+- **Gemini** - [aistudio.google.com](https://aistudio.google.com) -> Get API key. Make sure billing is enabled for the API key's Google Cloud project before generating infographics or voice samples.
 
 ## How It Works
 
 1. Enter a topic or question in the input box
 2. Choose a voice and aspect ratio
-3. Click **Generate** — Gemini creates the script and image, Inworld generates the narration audio
+3. Click **Generate** - Gemini creates the script, image, and narration audio
 4. Your infographic is saved locally and listed in the sidebar
 5. Optionally download as MP4 video
 
@@ -64,22 +71,21 @@ public/uploads/
   history-of-rome/
     image.jpg
     audio.mp3
-    meta.json    ← title, speaker notes, aspect ratio, creation date
-    video.mp4    ← only present if you exported it
+    meta.json    <- title, speaker notes, aspect ratio, creation date
+    video.mp4    <- only present if you exported it
   black-holes-explained/
     image.jpg
     audio.mp3
     meta.json
 ```
 
-Everything is gitignored — your generated content stays local.
+Everything is gitignored - your generated content stays local.
 
 ## Tech Stack
 
-- **Next.js 15** (App Router)
+- **Next.js 16** (App Router)
 - **TypeScript**
 - **Tailwind CSS v4**
 - **shadcn/ui**
-- **Google Gemini** (`@google/genai`) — image and script generation
-- **Inworld** — text-to-speech
-- **ffmpeg-static + Sharp** — MP4 video export (bundled, no system install needed)
+- **Google Gemini** (`@google/genai`) - image, script, and text-to-speech generation
+- **ffmpeg-static + Sharp** - MP4 video export (bundled, no system install needed)

@@ -3,9 +3,15 @@
  * Uses @google/genai SDK
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Modality } from '@google/genai';
 import { writeFile } from 'fs/promises';
 import type { InfographicData, ImageOptions } from './types';
+
+type GeminiErrorDetails = {
+  status?: number;
+  code?: number;
+  message?: string;
+};
 
 /**
  * Thrown when Gemini is overloaded or rate-limited and cannot generate an image
@@ -95,7 +101,7 @@ Output:0
 
     const result = response.text?.trim() || '0';
     return result === '1';
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error validating topic:', error);
     return false;
   }
@@ -156,7 +162,7 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
       scriptData = JSON.parse(jsonStr);
-    } catch (e) {
+    } catch {
       console.error('Failed to parse JSON script response:', responseText);
       throw new Error('Failed to generate structured script');
     }
@@ -190,12 +196,10 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
     `.trim();
 
     return { speaker_notes, script_sections: sections, image_prompt };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error generating infographic content:', error);
 
-    const isOverloaded = error?.status === 429 || error?.status === 500 || error?.status === 503 ||
-      error?.code === 429 || error?.code === 500 || error?.code === 503;
-    if (isOverloaded) {
+    if (isRetryableGeminiError(error)) {
       throw new GeminiOverloadedError();
     }
 
@@ -262,12 +266,12 @@ Output the rewritten script in the EXACT SAME JSON FORMAT as the original output
       const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
       const scriptData: { script_sections: string[] } = JSON.parse(jsonStr);
       return scriptData.script_sections || blockedScriptSections;
-    } catch (e) {
+    } catch {
       console.error('[SANITIZATION] Failed to parse response');
       return blockedScriptSections;
     }
-  } catch (error: any) {
-    console.error('[SANITIZATION] Error:', error?.message || error);
+  } catch (error) {
+    console.error('[SANITIZATION] Error:', getErrorMessage(error));
     return blockedScriptSections;
   }
 }
@@ -290,7 +294,7 @@ export async function generateImage(
 
   const streamImage = async (genClient: ReturnType<typeof createGeminiClient>, model: string): Promise<Buffer> => {
     const config = {
-      responseModalities: ['IMAGE', 'TEXT'] as any,
+      responseModalities: [Modality.IMAGE, Modality.TEXT],
       imageConfig: { aspectRatio, imageSize: '1K' },
     };
     const contents = [{ role: 'user' as const, parts: [{ text: enhancedPrompt }] }];
@@ -313,27 +317,27 @@ export async function generateImage(
     // Try Flash first, fall back to Pro on non-safety failures
     try {
       imageBuffer = await streamImage(client, FLASH_MODEL);
-    } catch (flashError: any) {
+    } catch (flashError) {
       if (flashError instanceof GeminiImageSafetyError) throw flashError;
-      console.warn('Flash image model failed, falling back to Pro:', flashError?.message || flashError);
+      console.warn('Flash image model failed, falling back to Pro:', getErrorMessage(flashError));
       imageBuffer = await streamImage(client, PRO_MODEL);
     }
 
     await writeFile(outputPath, imageBuffer);
     return outputPath;
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof GeminiImageSafetyError || error instanceof GeminiOverloadedError) {
       throw error;
     }
 
+    const errorDetails = getErrorDetails(error);
     console.error('Gemini generateImage raw error:', {
-      status: error?.status,
-      code: error?.code,
-      message: error?.message,
+      status: errorDetails.status,
+      code: errorDetails.code,
+      message: errorDetails.message,
     });
 
-    const isRateLimit = error?.status === 429 || error?.status === 500 || error?.status === 503 ||
-      error?.code === 429 || error?.code === 500 || error?.code === 503;
+    const isRateLimit = isRetryableGeminiError(error);
 
     // Try backup key on rate limit/overload
     if (isRateLimit && process.env.GEMINI_API_KEY2) {
@@ -343,7 +347,7 @@ export async function generateImage(
         const imageBuffer = await streamImage(backupClient, PRO_MODEL);
         await writeFile(outputPath, imageBuffer);
         return outputPath;
-      } catch (backupError: any) {
+      } catch (backupError) {
         console.error('Backup key also failed:', backupError);
       }
     }
@@ -355,4 +359,22 @@ export async function generateImage(
     console.error('Error generating image:', error);
     return '';
   }
+}
+
+function getErrorDetails(error: unknown): GeminiErrorDetails {
+  if (typeof error === 'object' && error !== null) {
+    return error as GeminiErrorDetails;
+  }
+
+  return { message: String(error) };
+}
+
+function getErrorMessage(error: unknown): string {
+  return getErrorDetails(error).message || String(error);
+}
+
+function isRetryableGeminiError(error: unknown): boolean {
+  const { status, code } = getErrorDetails(error);
+  return status === 429 || status === 500 || status === 503 ||
+    code === 429 || code === 500 || code === 503;
 }

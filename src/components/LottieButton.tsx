@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import type { AnimationItem } from 'lottie-web'
 
 type LottieButtonProps = {
   src: string
@@ -13,32 +14,32 @@ type LottieButtonProps = {
 
 export default function LottieButton({ src, width = 160, height = 160, className = '', loop = false, audioSrc }: LottieButtonProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
-  const animationRef = React.useRef<any>(null)
+  const animationRef = React.useRef<AnimationItem | null>(null)
   const audioRef = React.useRef<HTMLAudioElement | null>(null)
   const stopTimerRef = React.useRef<number | null>(null)
   const lastFrameRef = React.useRef<number>(0)
   const isPlayingRef = React.useRef<boolean>(false)
-  const originalLoopRef = React.useRef<any>(null)
+  const originalLoopRef = React.useRef<AnimationItem['loop'] | null>(null)
 
   React.useEffect(() => {
     let isMounted = true
-    let lottieModule: any
 
     async function load() {
       const mod = await import('lottie-web')
       if (!isMounted || !containerRef.current) return
-      lottieModule = mod.default || mod
-      animationRef.current = lottieModule.loadAnimation({
+      const lottieModule = mod.default || mod
+      const animation = lottieModule.loadAnimation({
         container: containerRef.current,
         renderer: 'svg',
         loop,
         autoplay: false,
         path: src,
       })
+      animationRef.current = animation
 
-      animationRef.current.addEventListener('DOMLoaded', () => {
+      animation.addEventListener('DOMLoaded', () => {
         // Show the last stored frame as the resting state
-        animationRef.current.goToAndStop(lastFrameRef.current || 0, true)
+        animation.goToAndStop(lastFrameRef.current || 0, true)
       })
     }
 

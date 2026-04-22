@@ -36,13 +36,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.INWORLD_API_KEY) {
-      return NextResponse.json(
-        { error: 'INWORLD_API_KEY is not configured' },
-        { status: 500 }
-      );
-    }
-
     const trimmedTopic = topic.trim();
     const id = await generateUniqueSlug(trimmedTopic);
     await createPresentation(id, trimmedTopic, aspectRatio);

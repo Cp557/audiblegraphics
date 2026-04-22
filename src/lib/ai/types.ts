@@ -34,7 +34,7 @@ export interface GenerationOptions {
 }
 
 /**
- * Audio generation parameters for Deepgram
+ * Audio generation parameters for Gemini TTS
  */
 export interface AudioOptions {
   model?: string;

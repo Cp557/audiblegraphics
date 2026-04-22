@@ -1,6 +1,6 @@
 /**
  * Main infographic generation orchestrator
- * Coordinates Gemini and Inworld APIs to create complete presentations
+ * Coordinates Gemini APIs to create complete presentations
  */
 
 import path from 'path';

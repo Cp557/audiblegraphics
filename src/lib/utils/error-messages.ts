@@ -20,11 +20,6 @@ const ERROR_MAP: Record<string, UserFriendlyError> = {
     title: 'API Key Missing',
     description: 'GEMINI_API_KEY is not set in your .env.local file.',
   },
-  'INWORLD_API_KEY is not configured': {
-    title: 'API Key Missing',
-    description: 'INWORLD_API_KEY is not set in your .env.local file.',
-  },
-
   // Service overload / down
   'Gemini is down right now': {
     title: 'Gemini Unavailable',

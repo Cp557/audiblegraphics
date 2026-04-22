@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { after } from 'next/server';
-import { getPresentation, updatePresentationVideoFlag } from '@/lib/local/presentations';
+import { getPresentation } from '@/lib/local/presentations';
 import { videoExists, getLocalFilePaths } from '@/lib/local/storage';
 import { generatePresentationVideo } from '@/lib/video/video-generator';
 
@@ -67,7 +67,6 @@ export async function POST(
       console.log(`[VideoRoute] Starting video generation for ${id}`);
       try {
         await generatePresentationVideo(imagePath, audioPath, videoPath, aspectRatio);
-        await updatePresentationVideoFlag(id, true);
         console.log(`[VideoRoute] Video generation completed for ${id}`);
       } catch (error) {
         console.error(`[VideoRoute] Video generation failed for ${id}:`, error);

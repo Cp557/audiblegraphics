@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Presentation } from '@/lib/local/presentations';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Loader2, Play, Pause, RotateCcw } from 'lucide-react';
+import { Loader2, Play, Pause } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Slider } from '@/components/ui/slider';
 
@@ -13,24 +13,31 @@ interface PresentationViewerProps {
 }
 
 export function PresentationViewer({ presentation }: PresentationViewerProps) {
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(() => !presentation.image_url);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { autoplayAudio } = useSettings();
 
-  const { image_url, audio_url, speaker_notes, title } = presentation;
+  const { image_url, audio_url, title } = presentation;
 
   useEffect(() => {
-    if (image_url) {
-      const img = new window.Image();
-      img.src = image_url;
-      img.onload = () => setImageLoaded(true);
-      img.onerror = () => setImageLoaded(true); // Show placeholder or error state
-    } else {
-        setImageLoaded(true);
-    }
+    if (!image_url) return;
+
+    let cancelled = false;
+    const img = new window.Image();
+    img.src = image_url;
+    img.onload = () => {
+      if (!cancelled) setImageLoaded(true);
+    };
+    img.onerror = () => {
+      if (!cancelled) setImageLoaded(true);
+    };
+
+    return () => {
+      cancelled = true;
+    };
   }, [image_url]);
 
   const togglePlay = () => {

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AudibleGraphics",
-  description: "Generate narrated infographics locally using Gemini AI and Inworld TTS.",
+  description: "Generate narrated infographics locally using Gemini AI.",
   icons: {
     icon: '/logo.svg',
   },

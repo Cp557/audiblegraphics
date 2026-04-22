@@ -16,27 +16,10 @@ interface SettingsProviderProps {
 }
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
-  const [autoplayAudio, setAutoplayAudioState] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Load settings from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const settings = JSON.parse(stored);
-        setAutoplayAudioState(settings.autoplayAudio ?? false);
-      }
-    } catch (error) {
-      console.error('Failed to load settings from localStorage:', error);
-    }
-    setIsInitialized(true);
-  }, []);
+  const [autoplayAudio, setAutoplayAudioState] = useState(readStoredAutoplayAudio);
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
-    if (!isInitialized) return;
-
     try {
       const settings = {
         autoplayAudio,
@@ -45,7 +28,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     } catch (error) {
       console.error('Failed to save settings to localStorage:', error);
     }
-  }, [autoplayAudio, isInitialized]);
+  }, [autoplayAudio]);
 
   const setAutoplayAudio = (value: boolean) => {
     setAutoplayAudioState(value);
@@ -61,6 +44,20 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       {children}
     </SettingsContext.Provider>
   );
+}
+
+function readStoredAutoplayAudio(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (!stored) return false;
+    const settings = JSON.parse(stored) as { autoplayAudio?: boolean };
+    return settings.autoplayAudio ?? false;
+  } catch (error) {
+    console.error('Failed to load settings from localStorage:', error);
+    return false;
+  }
 }
 
 export function useSettings() {

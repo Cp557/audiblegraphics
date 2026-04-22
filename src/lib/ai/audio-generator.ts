@@ -1,4 +1,4 @@
-import { generateInworldAudio } from './inworld';
+import { generateGeminiTtsAudio } from './gemini-tts';
 import type { AudioOptions } from './types';
 import fs from 'fs/promises';
 import path from 'path';
@@ -62,7 +62,7 @@ export async function generateAudioFromSections(
 }
 
 /**
- * Generate audio using Inworld TTS.
+ * Generate audio using Gemini TTS.
  *
  * @param narration - Text to speak
  * @param outputPath - Path to save the audio file
@@ -78,7 +78,7 @@ export async function generateAudio(
     throw new Error('No narration text provided');
   }
 
-  return await generateInworldAudio(narration, outputPath, options);
+  return await generateGeminiTtsAudio(narration, outputPath, options);
 }
 
 /**
@@ -110,7 +110,9 @@ async function stitchAudioFiles(inputPaths: string[], outputPath: string): Promi
   }
 
   const concatListPath = path.join(path.dirname(inputPaths[0]), 'concat_list.txt');
-  const listContent = filesToConcat.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n');
+  const listContent = filesToConcat
+    .map((filePath) => `file '${toFfmpegConcatPath(filePath)}'`)
+    .join('\n');
   await fs.writeFile(concatListPath, listContent);
 
   return new Promise((resolve, reject) => {
@@ -119,6 +121,7 @@ async function stitchAudioFiles(inputPaths: string[], outputPath: string): Promi
       .inputOptions(['-f concat', '-safe 0'])
       .outputOptions(['-c:a libmp3lame', '-b:a 128k', '-ar 44100', '-ac 2'])
       .on('error', (err) => {
+        fs.unlink(concatListPath).catch(() => {});
         console.error('FFmpeg concat error:', err);
         reject(err);
       })
@@ -128,4 +131,8 @@ async function stitchAudioFiles(inputPaths: string[], outputPath: string): Promi
       })
       .save(outputPath);
   });
+}
+
+function toFfmpegConcatPath(filePath: string): string {
+  return path.resolve(filePath).replace(/\\/g, '/').replace(/'/g, "'\\''");
 }

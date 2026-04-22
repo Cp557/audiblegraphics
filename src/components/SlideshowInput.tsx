@@ -15,12 +15,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const VOICES = [
-  { id: 'Craig', name: 'Craig' },
-  { id: 'Dennis', name: 'Dennis' },
-  { id: 'Alex', name: 'Alex' },
-  { id: 'Deborah', name: 'Deborah' },
-  { id: 'Hades', name: 'Hades' },
-  { id: 'Olivia', name: 'Olivia' },
+  { id: 'Achird', name: 'Achird' },
+  { id: 'Aoede', name: 'Aoede' },
+  { id: 'Charon', name: 'Charon' },
+  { id: 'Laomedeia', name: 'Laomedeia' },
 ] as const;
 
 const ASPECT_RATIOS = [
@@ -30,7 +28,7 @@ const ASPECT_RATIOS = [
 
 export function SlideshowInput() {
   const [topic, setTopic] = useState('');
-  const [voice, setVoice] = useState('Craig');
+  const [voice, setVoice] = useState('Achird');
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [loading, setLoading] = useState(false);
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
@@ -136,7 +134,7 @@ export function SlideshowInput() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button type="button" variant="outline" className="min-w-[140px] justify-between">
-                      {VOICES.find((v) => v.id === voice)?.name || 'Craig'}
+                      {VOICES.find((v) => v.id === voice)?.name || 'Achird'}
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
