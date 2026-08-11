@@ -2,11 +2,23 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, CirclePlay, ChevronDown, Monitor, Smartphone } from 'lucide-react';
+import {
+  Loader2,
+  CirclePlay,
+  ChevronDown,
+  Monitor,
+  Smartphone,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { getUserFriendlyError } from '@/lib/utils/error-messages';
+import { useSettings } from '@/contexts/SettingsContext';
+import { decodeGenerationBundle } from '@/lib/generation-bundle';
+import {
+  createPresentationId,
+  savePresentation,
+} from '@/lib/browser/presentations';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const VOICES = [
-  { id: 'Achird', name: 'Achird' },
+  { id: 'Puck', name: 'Puck' },
   { id: 'Aoede', name: 'Aoede' },
   { id: 'Charon', name: 'Charon' },
   { id: 'Laomedeia', name: 'Laomedeia' },
@@ -28,12 +40,13 @@ const ASPECT_RATIOS = [
 
 export function SlideshowInput() {
   const [topic, setTopic] = useState('');
-  const [voice, setVoice] = useState('Achird');
+  const [voice, setVoice] = useState('Puck');
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [loading, setLoading] = useState(false);
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
+  const { geminiApiKey, requireGeminiApiKey } = useSettings();
 
   const handlePlayVoice = (voiceId: string) => {
     if (audioRef.current) {
@@ -53,37 +66,60 @@ export function SlideshowInput() {
     audio.play().catch((error) => {
       console.error('Error playing audio:', error);
       setPlayingVoice(null);
+      toast.error('Voice preview unavailable', {
+        description: `${voiceId} will still be used when you generate.`,
+      });
     });
 
     audio.onended = () => setPlayingVoice(null);
   };
 
   const generateSlideshow = async () => {
+    if (!geminiApiKey) {
+      requireGeminiApiKey();
+      return;
+    }
+
     setLoading(true);
 
     try {
       const response = await fetch('/api/generate-slideshow', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-gemini-api-key': geminiApiKey,
+        },
         body: JSON.stringify({ topic, voice, aspectRatio }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json().catch(() => null);
         const errorMsg = typeof data?.error === 'string' ? data.error : 'Unknown error';
+        if (response.status === 401) requireGeminiApiKey();
         const friendlyError = getUserFriendlyError(errorMsg);
         toast.error(friendlyError.title, { description: friendlyError.description });
         setLoading(false);
         return;
       }
 
-      if (data.presentation_id) {
-        router.prefetch(`/presentations/${data.presentation_id}`);
-        router.push(`/presentations/${data.presentation_id}`);
-      }
-    } catch {
-      const friendlyError = getUserFriendlyError('Failed to fetch');
+      const bundle = decodeGenerationBundle(await response.arrayBuffer());
+      const presentationId = createPresentationId(bundle.title);
+
+      await savePresentation({
+        id: presentationId,
+        title: bundle.title,
+        speaker_notes: bundle.speakerNotes,
+        aspect_ratio: bundle.aspectRatio,
+        voice: bundle.voice,
+        created_at: new Date().toISOString(),
+        image: bundle.image,
+        audio: bundle.audio,
+      });
+
+      router.prefetch(`/presentations/${presentationId}`);
+      router.push(`/presentations/${presentationId}`);
+    } catch (error) {
+      const friendlyError = getUserFriendlyError(error);
       toast.error(friendlyError.title, { description: friendlyError.description });
       setLoading(false);
     }
@@ -108,6 +144,27 @@ export function SlideshowInput() {
       ) : (
         <>
           <h2 className="mb-7 text-center text-xl font-semibold">Enter Topic or Question</h2>
+          {!geminiApiKey && (
+            <div className="mb-6 flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">Bring your own Gemini API key</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  AudibleGraphics is an open-source project and does not provide a shared Gemini
+                  account. Your key pays Google directly for the generation you use and is never
+                  stored on our servers.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={requireGeminiApiKey}
+              >
+                Add Gemini key
+              </Button>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex gap-2">
               <Input
@@ -122,7 +179,7 @@ export function SlideshowInput() {
               <Button
                 type="submit"
                 disabled={!topic.trim()}
-                className="cursor-pointer transition-transform hover:scale-105"
+                className="h-10 cursor-pointer transition-transform hover:scale-105"
               >
                 Generate
               </Button>
@@ -134,7 +191,7 @@ export function SlideshowInput() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button type="button" variant="outline" className="min-w-[140px] justify-between">
-                      {VOICES.find((v) => v.id === voice)?.name || 'Achird'}
+                      {VOICES.find((v) => v.id === voice)?.name || 'Puck'}
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>

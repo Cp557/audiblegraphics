@@ -41,8 +41,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# user-generated content (local storage)
-/public/uploads/
-!/public/uploads/.gitkeep
-/data/

@@ -1,239 +1,179 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, Download, Loader2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getUserFriendlyError } from '@/lib/utils/error-messages';
+import {
+  savePresentationVideo,
+  type StoredPresentation,
+} from '@/lib/browser/presentations';
+
+type JobStatus = 'idle' | 'loading' | 'processing' | 'completed' | 'failed';
 
 interface DownloadVideoButtonProps {
-  presentationId: string;
-  title: string;
+  presentation: StoredPresentation;
 }
 
-type JobStatus = 'idle' | 'pending' | 'processing' | 'completed' | 'failed';
+let ffmpegInstancePromise: Promise<import('@ffmpeg/ffmpeg').FFmpeg> | null = null;
 
-interface VideoStatusResponse {
-  status: string;
-  progress?: number;
-  videoUrl?: string;
-  error?: string;
+async function getFfmpeg(): Promise<import('@ffmpeg/ffmpeg').FFmpeg> {
+  if (!ffmpegInstancePromise) {
+    ffmpegInstancePromise = (async () => {
+      const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
+        import('@ffmpeg/ffmpeg'),
+        import('@ffmpeg/util'),
+      ]);
+      const ffmpeg = new FFmpeg();
+      const coreBaseUrl = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
+
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${coreBaseUrl}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${coreBaseUrl}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+      return ffmpeg;
+    })().catch((error) => {
+      ffmpegInstancePromise = null;
+      throw error;
+    });
+  }
+
+  return ffmpegInstancePromise;
 }
 
-interface VideoStartResponse {
-  presentationId?: string;
-  status: string;
-  videoUrl?: string;
-  message?: string;
-  cached?: boolean;
-  error?: string;
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
-export function DownloadVideoButton({ presentationId, title }: DownloadVideoButtonProps) {
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || presentationId;
+export function DownloadVideoButton({ presentation }: DownloadVideoButtonProps) {
   const [status, setStatus] = useState<JobStatus>('idle');
   const [progress, setProgress] = useState(0);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Download video from URL
-  const downloadVideo = async (videoUrl: string) => {
-    try {
-      const videoResponse = await fetch(videoUrl);
-      if (!videoResponse.ok) {
-        throw new Error('Failed to download video file');
-      }
-
-      // Get the blob
-      const blob = await videoResponse.blob();
-
-      // Create a download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${slug}.mp4`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Cleanup the blob URL
-      window.URL.revokeObjectURL(url);
-
-      // Show success state briefly
-      setStatus('completed');
-      setTimeout(() => {
-        setStatus('idle');
-        setProgress(0);
-      }, 2000);
-    } catch (downloadError) {
-      console.error('Error downloading video file:', downloadError);
-      const friendlyError = getUserFriendlyError(downloadError);
-      toast.error(friendlyError.title, {
-        description: friendlyError.description,
-      });
-      setStatus('idle');
-    }
-  };
-
-  // Start polling for video status (polls the database via API)
-  const startPolling = () => {
-    // Clear any existing polling
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-    }
-
-    // Poll every 3 seconds (database-backed, so slightly longer interval is fine)
-    pollingIntervalRef.current = setInterval(async () => {
-      try {
-        // Poll the presentation's video status endpoint
-        const response = await fetch(`/api/presentations/${presentationId}/video`);
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch video status');
-        }
-
-        const data: VideoStatusResponse = await response.json();
-        
-        if (data.status === 'completed' && data.videoUrl) {
-          // Stop polling
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
-
-          setStatus('completed');
-          setProgress(100);
-
-          // Download the video
-          await downloadVideo(data.videoUrl);
-        } else if (data.status === 'processing') {
-          setStatus('processing');
-          setProgress(data.progress || 50);
-        }
-      } catch (err) {
-        console.error('Error polling video status:', err);
-        // Don't stop polling on transient errors, just log them
-        // Only stop after many failures (handled by timeout below)
-      }
-    }, 3000);
-
-    // Timeout after 5 minutes (video generation shouldn't take longer)
-    setTimeout(() => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-        
-        if (status === 'processing' || status === 'pending') {
-          setStatus('failed');
-          toast.error('Video Download Failed', {
-            description: 'Video generation timed out. Please try again later.',
-          });
-          setTimeout(() => {
-            setStatus('idle');
-          }, 3000);
-        }
-      }
-    }, 5 * 60 * 1000);
-  };
+  const slug = presentation.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60) || presentation.id;
 
   const handleDownload = async () => {
+    if (presentation.video) {
+      downloadBlob(presentation.video, `${slug}.mp4`);
+      setStatus('completed');
+      setTimeout(() => setStatus('idle'), 2000);
+      return;
+    }
+
+    const inputImage = `image-${presentation.id}.jpg`;
+    const inputAudio = `audio-${presentation.id}.mp3`;
+    const outputVideo = `video-${presentation.id}.mp4`;
+
     try {
-      setStatus('pending');
+      setStatus('loading');
       setProgress(0);
-
-      // Start video generation (or get cached video)
-      const response = await fetch(`/api/presentations/${presentationId}/video`, {
-        method: 'POST',
+      toast.info('Preparing video exporter', {
+        description: 'The first export downloads the browser video engine.',
       });
 
-      const data: VideoStartResponse = await response.json();
+      const ffmpeg = await getFfmpeg();
+      const onProgress = ({ progress: nextProgress }: { progress: number }) => {
+        if (Number.isFinite(nextProgress)) {
+          setProgress(Math.max(0, Math.min(100, Math.round(nextProgress * 100))));
+        }
+      };
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to start video generation');
-      }
-
-      // Check if video was already cached
-      if (data.cached && data.videoUrl) {
-        // Video already exists, download it directly
-        setStatus('processing');
-        setProgress(100);
-        await downloadVideo(data.videoUrl);
-        return;
-      }
-
-      // Video is being generated, notify user and start polling
-      toast.info('Generating Video', {
-        description: 'This may take a couple of minutes. Please stay on this page until it is ready.',
-      });
+      ffmpeg.on('progress', onProgress);
       setStatus('processing');
-      startPolling();
-      
-    } catch (err) {
-      console.error('Error starting video generation:', err);
-      const friendlyError = getUserFriendlyError(err);
-      toast.error(friendlyError.title, {
-        description: friendlyError.description,
-      });
-      setStatus('idle');
+
+      try {
+        await ffmpeg.writeFile(inputImage, new Uint8Array(await presentation.image.arrayBuffer()));
+        await ffmpeg.writeFile(inputAudio, new Uint8Array(await presentation.audio.arrayBuffer()));
+
+        const dimensions = presentation.aspect_ratio === '9:16'
+          ? { width: 720, height: 1280 }
+          : { width: 1280, height: 720 };
+        const videoFilter = [
+          `scale=${dimensions.width}:${dimensions.height}:force_original_aspect_ratio=decrease`,
+          `pad=${dimensions.width}:${dimensions.height}:(ow-iw)/2:(oh-ih)/2:white`,
+        ].join(',');
+
+        await ffmpeg.exec([
+          '-loop', '1',
+          '-i', inputImage,
+          '-i', inputAudio,
+          '-vf', videoFilter,
+          '-c:v', 'libx264',
+          '-tune', 'stillimage',
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          '-pix_fmt', 'yuv420p',
+          '-shortest',
+          '-movflags', '+faststart',
+          outputVideo,
+        ]);
+
+        const output = await ffmpeg.readFile(outputVideo);
+        if (typeof output === 'string') throw new Error('Video export returned invalid data');
+        const videoBytes = Uint8Array.from(output);
+        const video = new Blob([videoBytes.buffer], { type: 'video/mp4' });
+
+        await savePresentationVideo(presentation.id, video);
+        downloadBlob(video, `${slug}.mp4`);
+        setProgress(100);
+        setStatus('completed');
+        setTimeout(() => setStatus('idle'), 2000);
+      } finally {
+        ffmpeg.off('progress', onProgress);
+        await Promise.all([
+          ffmpeg.deleteFile(inputImage).catch(() => undefined),
+          ffmpeg.deleteFile(inputAudio).catch(() => undefined),
+          ffmpeg.deleteFile(outputVideo).catch(() => undefined),
+        ]);
+      }
+    } catch (error) {
+      console.error('Browser video export failed:', error);
+      const friendlyError = getUserFriendlyError(error);
+      toast.error(friendlyError.title, { description: friendlyError.description });
+      setStatus('failed');
+      setTimeout(() => setStatus('idle'), 3000);
     }
   };
 
-  const isGenerating = status === 'pending' || status === 'processing';
-  const isCompleted = status === 'completed';
-  const isFailed = status === 'failed';
-
-  const statusLabel =
-    status === 'processing' || status === 'pending'
-      ? `Generating video${progress ? ` ${progress}%` : ''}`
-      : status === 'completed'
-        ? 'Video downloaded'
-        : status === 'failed'
-          ? 'Video generation failed'
-          : 'Download video';
-
-  const iconClass =
-    'h-4 w-4 cursor-pointer text-muted-foreground transition-colors group-hover:text-primary group-focus-visible:text-primary';
+  const isGenerating = status === 'loading' || status === 'processing';
+  const statusLabel = isGenerating
+    ? `Generating video${progress ? ` ${progress}%` : ''}`
+    : status === 'completed'
+      ? 'Video downloaded'
+      : status === 'failed'
+        ? 'Video generation failed'
+        : 'Download video';
+  const iconClass = 'h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary';
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        onClick={handleDownload}
-        disabled={isGenerating || isCompleted}
-        variant="outline"
-        size="sm"
-        aria-label={statusLabel}
-        className="group inline-flex items-center justify-center gap-2 rounded-full px-3 cursor-pointer disabled:cursor-not-allowed"
-      >
-        {isGenerating && (
-          <>
-            <Loader2 className={`${iconClass} animate-spin`} />
-          </>
-        )}
-        {isCompleted && (
-          <>
-            <CheckCircle className={iconClass} />
-          </>
-        )}
-        {isFailed && (
-          <>
-            <XCircle className={iconClass} />
-          </>
-        )}
-        {status === 'idle' && (
-          <>
-            <Download className={iconClass} />
-          </>
-        )}
-      </Button>
-    </div>
+    <Button
+      onClick={handleDownload}
+      disabled={isGenerating || status === 'completed'}
+      variant="outline"
+      size="sm"
+      aria-label={statusLabel}
+      title={statusLabel}
+      className="group inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-3 disabled:cursor-not-allowed"
+    >
+      {isGenerating ? (
+        <Loader2 className={`${iconClass} animate-spin`} />
+      ) : status === 'completed' ? (
+        <CheckCircle className={iconClass} />
+      ) : status === 'failed' ? (
+        <XCircle className={iconClass} />
+      ) : (
+        <Download className={iconClass} />
+      )}
+    </Button>
   );
 }

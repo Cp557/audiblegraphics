@@ -5,6 +5,11 @@ import ffmpeg from 'fluent-ffmpeg';
 import { createGeminiClient } from './gemini';
 import type { AudioOptions } from './types';
 import { ffmpegPath } from '../video/ffmpeg-config';
+import { GEMINI_MODELS } from './models';
+import {
+  GeminiCreditsDepletedError,
+  isGeminiCreditsDepletedError,
+} from './gemini-errors';
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -14,11 +19,9 @@ interface WavConversionOptions {
   bitsPerSample: number;
 }
 
-const DEFAULT_VOICE = 'Achird';
-const GEMINI_TTS_MODEL = 'gemini-3.1-flash-tts-preview';
+const DEFAULT_VOICE = 'Puck';
 const VOICE_ALIASES: Record<string, string> = {
-  achird: 'Achird',
-  archid: 'Achird',
+  puck: 'Puck',
   aoede: 'Aoede',
   charon: 'Charon',
   laomedeia: 'Laomedeia',
@@ -36,9 +39,9 @@ export async function generateGeminiTtsAudio(
     throw new Error('No narration provided');
   }
 
-  const client = createGeminiClient();
+  const client = createGeminiClient(options.apiKey);
   const voiceName = normalizeVoiceName(options.voice);
-  const model = options.model || GEMINI_TTS_MODEL;
+  const model = options.model || GEMINI_MODELS.tts;
   const outputPathMp3 = outputPath.replace(/\.[^.]+$/, '.mp3');
 
   console.log(`Generating TTS with Gemini voice ${voiceName} for: ${outputPathMp3}`);
@@ -175,6 +178,9 @@ async function generateContentWithRetry<T>(generate: () => Promise<T>): Promise<
       return await generate();
     } catch (error) {
       lastError = error;
+      if (isGeminiCreditsDepletedError(error)) {
+        throw new GeminiCreditsDepletedError();
+      }
       if (attempt === 2 || !isRetryableGeminiTtsError(error)) {
         break;
       }

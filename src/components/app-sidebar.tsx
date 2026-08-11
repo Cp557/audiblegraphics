@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { SquarePlus } from "lucide-react"
+import { Github, KeyRound, SquarePlus } from "lucide-react"
 import { usePathname } from "next/navigation"
 
 import { NavMain } from "@/components/nav-main"
@@ -9,15 +9,18 @@ import { NavProjects } from "@/components/nav-projects"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Presentation } from "@/lib/local/presentations"
+import { SettingsSheet } from "@/components/SettingsSheet"
+import { useSettings } from "@/contexts/SettingsContext"
+import { usePresentationSummaries } from "@/hooks/use-presentations"
 
 const data = {
-  brand: {
-    title: "AudibleGraphics",
-  },
   navMain: [
     {
       title: "New Infographic",
@@ -27,12 +30,12 @@ const data = {
   ],
 }
 
-type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  presentations?: Presentation[]
-}
+type AppSidebarProps = React.ComponentProps<typeof Sidebar>
 
-export function AppSidebar({ presentations = [], ...props }: AppSidebarProps) {
+export function AppSidebar(props: AppSidebarProps) {
   const pathname = usePathname()
+  const { presentations } = usePresentationSummaries()
+  const { settingsOpen, setSettingsOpen } = useSettings()
 
   const projects = presentations.map((presentation) => ({
     id: presentation.id,
@@ -47,16 +50,40 @@ export function AppSidebar({ presentations = [], ...props }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <span className="font-semibold text-sm truncate">{data.brand.title}</span>
-        </div>
+      <SidebarHeader className="h-16 shrink-0 justify-center p-0 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <NavMain items={navItems} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navItems} />
         <NavProjects projects={projects} />
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="GitHub">
+              <a
+                href="https://github.com/Cp557/audiblegraphics"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Github />
+                <span>GitHub</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => setSettingsOpen(true)}
+              tooltip="Gemini key"
+              className="cursor-pointer"
+            >
+              <KeyRound />
+              <span>Gemini key</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
       <SidebarRail />
+      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
     </Sidebar>
   )
 }

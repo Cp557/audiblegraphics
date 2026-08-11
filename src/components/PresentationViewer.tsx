@@ -1,44 +1,61 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Presentation } from '@/lib/local/presentations';
+import type { StoredPresentation } from '@/lib/browser/presentations';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Loader2, Play, Pause } from 'lucide-react';
-import { useSettings } from '@/contexts/SettingsContext';
 import { Slider } from '@/components/ui/slider';
 
 interface PresentationViewerProps {
-  presentation: Presentation;
+  presentation: StoredPresentation;
+}
+
+function useObjectUrl(blob: Blob | undefined): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!blob) return;
+
+    const nextUrl = URL.createObjectURL(blob);
+    // Object URLs are external browser resources and must follow the effect lifecycle.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUrl(nextUrl);
+
+    return () => URL.revokeObjectURL(nextUrl);
+  }, [blob]);
+
+  return url;
 }
 
 export function PresentationViewer({ presentation }: PresentationViewerProps) {
-  const [imageLoaded, setImageLoaded] = useState(() => !presentation.image_url);
+  const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const { autoplayAudio } = useSettings();
 
-  const { image_url, audio_url, title } = presentation;
+  const imageUrl = useObjectUrl(presentation.image);
+  const audioUrl = useObjectUrl(presentation.audio);
+  const { title } = presentation;
 
   useEffect(() => {
-    if (!image_url) return;
+    if (!imageUrl) return;
 
     let cancelled = false;
     const img = new window.Image();
-    img.src = image_url;
+    img.src = imageUrl;
     img.onload = () => {
-      if (!cancelled) setImageLoaded(true);
+      if (!cancelled) setLoadedImageUrl(imageUrl);
     };
     img.onerror = () => {
-      if (!cancelled) setImageLoaded(true);
+      if (!cancelled) setLoadedImageUrl(imageUrl);
     };
 
     return () => {
       cancelled = true;
     };
-  }, [image_url]);
+  }, [imageUrl]);
 
   const togglePlay = () => {
     if (audioRef.current) {
@@ -60,10 +77,6 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
-      if (autoplayAudio) {
-        audioRef.current.play().catch(console.warn);
-        setIsPlaying(true);
-      }
     }
   };
 
@@ -85,7 +98,7 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  if (!imageLoaded) {
+  if (!imageUrl || loadedImageUrl !== imageUrl) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -101,9 +114,9 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
         {/* Infographic Image Column */}
         <div className="relative w-full flex-1 min-h-0 flex justify-center items-center">
             <div className={`relative h-full w-auto max-w-full ${presentation.aspect_ratio === '9:16' ? 'aspect-[9/16]' : 'aspect-[16/9]'} rounded-xl overflow-hidden border shadow-lg border-gray-200 bg-background`}>
-            {image_url ? (
+            {imageUrl ? (
               <Image
-                src={image_url}
+                src={imageUrl}
                 alt={title}
                 fill
                 className="object-contain"
@@ -123,11 +136,11 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
           
           {/* Audio Player Card */}
           <div className="p-6 rounded-xl border shadow-sm bg-white">
-            {audio_url ? (
+            {audioUrl ? (
               <div className="flex flex-col gap-2">
                 <audio
                   ref={audioRef}
-                  src={audio_url}
+                  src={audioUrl}
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={handleLoadedMetadata}
                   onEnded={handleEnded}
@@ -158,7 +171,7 @@ export function PresentationViewer({ presentation }: PresentationViewerProps) {
                     {isPlaying ? (
                       <Pause className="h-4 w-4" />
                     ) : (
-                      <Play className="h-4 w-4 ml-1" />
+                      <Play className="h-4 w-4" />
                     )}
                   </Button>
                 </div>

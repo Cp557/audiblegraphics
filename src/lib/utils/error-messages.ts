@@ -20,6 +20,18 @@ const ERROR_MAP: Record<string, UserFriendlyError> = {
     title: 'API Key Missing',
     description: 'GEMINI_API_KEY is not set in your .env.local file.',
   },
+  'Add your Gemini API key': {
+    title: 'Gemini Key Required',
+    description: 'Add your Gemini API key in Settings, then try again.',
+  },
+  'API key not valid': {
+    title: 'Invalid Gemini Key',
+    description: 'Gemini rejected this API key. Check it in Settings and try again.',
+  },
+  'Gemini credits are depleted': {
+    title: 'Gemini Credits Depleted',
+    description: 'Your Gemini API credits have run out. Add credits to this key’s project in Google AI Studio, then try again.',
+  },
   // Service overload / down
   'Gemini is down right now': {
     title: 'Gemini Unavailable',

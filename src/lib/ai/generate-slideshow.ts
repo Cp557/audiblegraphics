@@ -5,22 +5,21 @@
 
 import path from 'path';
 import os from 'os';
-import { mkdir, rm } from 'fs/promises';
+import { mkdir, readFile, rm } from 'fs/promises';
 import { validateTopic, generateInfographicContent, generateImage, sanitizeSpeakerNotes, GeminiImageSafetyError } from './gemini';
 import { generateAudioFromSections } from './audio-generator';
-import { saveImage, saveAudio } from '../local/storage';
 
 export interface GenerationResult {
   title: string;
   speakerNotes: string;
+  image: Buffer;
+  audio: Buffer;
 }
 
 /**
  * Generate a complete infographic with audio for a given topic.
- * Saves image and audio to public/uploads/{presentationId}/.
- *
  * @param topic - The topic to generate an infographic about
- * @param presentationId - The UUID of the presentation (used for storage path)
+ * @param presentationId - A unique ID used for temporary paths
  * @param voice - Optional TTS voice name
  * @param aspectRatio - Image aspect ratio ('16:9' or '9:16')
  */
@@ -29,17 +28,18 @@ export async function generateInfographicWithAudio(options: {
   presentationId: string;
   voice?: string;
   aspectRatio?: '16:9' | '9:16';
+  apiKey?: string;
 }): Promise<GenerationResult> {
-  const { topic, presentationId, voice, aspectRatio = '16:9' } = options;
+  const { topic, presentationId, voice, aspectRatio = '16:9', apiKey } = options;
 
   // Step 1: Validate the topic
-  const isValid = await validateTopic(topic);
+  const isValid = await validateTopic(topic, apiKey);
   if (!isValid) {
     throw new Error(`Invalid topic: "${topic}" is not suitable for an infographic`);
   }
 
   // Step 2: Generate content (script + image prompt)
-  const content = await generateInfographicContent(topic);
+  const content = await generateInfographicContent(topic, apiKey);
 
   // Step 3: Create temp directory for intermediate files
   const tempDir = await mkdir(
@@ -56,12 +56,12 @@ export async function generateInfographicWithAudio(options: {
   try {
     // Step 4: Generate image (fail fast on 503 before wasting time on audio)
     try {
-      await generateImage(content.image_prompt, imagePath, { imageSize: '1K', aspectRatio });
+      await generateImage(content.image_prompt, imagePath, { imageSize: '1K', aspectRatio }, apiKey);
     } catch (error) {
       if (error instanceof GeminiImageSafetyError) {
         console.log(`[SAFETY_RETRY] Image blocked for "${topic}". Attempting sanitization and retry...`);
 
-        const sanitizedSections = await sanitizeSpeakerNotes(topic, content.script_sections);
+        const sanitizedSections = await sanitizeSpeakerNotes(topic, content.script_sections, apiKey);
         finalScriptSections = sanitizedSections;
         finalSpeakerNotes = sanitizedSections.join('\n\n');
 
@@ -81,6 +81,7 @@ export async function generateInfographicWithAudio(options: {
 
           TEXT RULES (CRITICAL):
           - STRONGLY PREFER icons, illustrations, and visual metaphors over text.
+          - NEVER overlap text with images, illustrations, icons, shapes, or decorative elements. Keep every text area clear and unobstructed.
           - If you MUST include any text, follow these rules strictly:
             1. Use ONLY short headlines and labels
             2. Make ALL text large and readable
@@ -89,7 +90,7 @@ export async function generateInfographicWithAudio(options: {
         `.trim();
 
         try {
-          await generateImage(sanitizedImagePrompt, imagePath, { imageSize: '1K', aspectRatio });
+          await generateImage(sanitizedImagePrompt, imagePath, { imageSize: '1K', aspectRatio }, apiKey);
           console.log(`[SAFETY_RETRY] Retry succeeded for "${topic}"`);
         } catch (retryError) {
           if (retryError instanceof GeminiImageSafetyError) {
@@ -103,13 +104,18 @@ export async function generateInfographicWithAudio(options: {
     }
 
     // Step 5: Generate audio
-    await generateAudioFromSections(finalScriptSections, audioPath, voice ? { voice } : {});
+    await generateAudioFromSections(
+      finalScriptSections,
+      audioPath,
+      voice ? { voice, apiKey } : { apiKey }
+    );
 
-    // Step 6: Save to local storage
-    await saveImage(imagePath, presentationId);
-    await saveAudio(audioPath, presentationId);
+    const [image, audio] = await Promise.all([
+      readFile(imagePath),
+      readFile(audioPath),
+    ]);
 
-    return { title: topic, speakerNotes: finalSpeakerNotes };
+    return { title: topic, speakerNotes: finalSpeakerNotes, image, audio };
 
   } finally {
     // Cleanup temp directory
@@ -117,11 +123,4 @@ export async function generateInfographicWithAudio(options: {
       console.warn('Failed to cleanup temp dir:', e)
     );
   }
-}
-
-/**
- * Validate a topic without generating a full slideshow
- */
-export async function validateSlideshowTopic(topic: string): Promise<boolean> {
-  return validateTopic(topic);
 }

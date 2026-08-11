@@ -45,6 +45,10 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  deletePresentation,
+  updatePresentationTitle,
+} from "@/lib/browser/presentations"
 
 export function NavProjects({
   projects,
@@ -101,28 +105,8 @@ export function NavProjects({
     setError(null)
 
     try {
-      const response = await fetch(`/api/presentations/${selectedProject.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title: trimmedTitle }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to rename presentation')
-      }
-
+      await updatePresentationTitle(selectedProject.id, trimmedTitle)
       setRenameDialogOpen(false)
-
-      // If slug changed and we're viewing this presentation, navigate to the new URL
-      if (data.newId && data.newId !== selectedProject.id && pathname === `/presentations/${selectedProject.id}`) {
-        router.push(`/presentations/${data.newId}`)
-      } else {
-        router.refresh()
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -137,22 +121,12 @@ export function NavProjects({
     setError(null)
 
     try {
-      const response = await fetch(`/api/presentations/${selectedProject.id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to delete presentation')
-      }
-
+      await deletePresentation(selectedProject.id)
       setDeleteDialogOpen(false)
 
       // If we're currently viewing the deleted presentation, redirect to home
       if (pathname === `/presentations/${selectedProject.id}`) {
         router.push('/')
-      } else {
-        router.refresh()
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')

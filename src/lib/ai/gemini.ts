@@ -6,6 +6,11 @@
 import { GoogleGenAI, Modality } from '@google/genai';
 import { writeFile } from 'fs/promises';
 import type { InfographicData, ImageOptions } from './types';
+import { GEMINI_MODELS } from './models';
+import {
+  GeminiCreditsDepletedError,
+  isGeminiCreditsDepletedError,
+} from './gemini-errors';
 
 type GeminiErrorDetails = {
   status?: number;
@@ -47,8 +52,8 @@ export function createGeminiClient(specificKey?: string) {
 /**
  * Validate if a topic is suitable for an infographic
  */
-export async function validateTopic(topic: string): Promise<boolean> {
-  const client = createGeminiClient();
+export async function validateTopic(topic: string, apiKey?: string): Promise<boolean> {
+  const client = createGeminiClient(apiKey);
 
   const systemPrompt = `<role>
 You are an AI assistant that determines if a user input is a suitable topic for an infographic.
@@ -94,24 +99,26 @@ Output:0
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: GEMINI_MODELS.text,
       contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
-      config: { temperature: 0 },
     });
 
     const result = response.text?.trim() || '0';
     return result === '1';
   } catch (error) {
     console.error('Error validating topic:', error);
-    return false;
+    if (isGeminiCreditsDepletedError(error)) {
+      throw new GeminiCreditsDepletedError();
+    }
+    throw error;
   }
 }
 
 /**
  * Generate infographic content (Script + Image Prompt)
  */
-export async function generateInfographicContent(topic: string): Promise<InfographicData> {
-  const client = createGeminiClient();
+export async function generateInfographicContent(topic: string, apiKey?: string): Promise<InfographicData> {
+  const client = createGeminiClient(apiKey);
 
   const scriptPrompt = `
     You are an expert educational content creator.
@@ -147,10 +154,9 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
 
   try {
     const scriptResponse = await client.models.generateContent({
-      model: 'gemini-2.5-pro',
+      model: GEMINI_MODELS.text,
       contents: [{ role: 'user', parts: [{ text: scriptPrompt }] }],
       config: {
-        temperature: 0.7,
         responseMimeType: 'application/json',
       }
     });
@@ -188,6 +194,7 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
 
       TEXT RULES (CRITICAL):
       - STRONGLY PREFER icons, illustrations, and visual metaphors over text.
+      - NEVER overlap text with images, illustrations, icons, shapes, or decorative elements. Keep every text area clear and unobstructed.
       - If you MUST include any text, follow these rules strictly:
         1. Use ONLY short headlines and labels
         2. Make ALL text large and readable
@@ -198,6 +205,10 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
     return { speaker_notes, script_sections: sections, image_prompt };
   } catch (error) {
     console.error('Error generating infographic content:', error);
+
+    if (isGeminiCreditsDepletedError(error)) {
+      throw new GeminiCreditsDepletedError();
+    }
 
     if (isRetryableGeminiError(error)) {
       throw new GeminiOverloadedError();
@@ -210,8 +221,12 @@ export async function generateInfographicContent(topic: string): Promise<Infogra
 /**
  * Sanitize speaker notes that were blocked by content safety filters
  */
-export async function sanitizeSpeakerNotes(topic: string, blockedScriptSections: string[]): Promise<string[]> {
-  const client = createGeminiClient();
+export async function sanitizeSpeakerNotes(
+  topic: string,
+  blockedScriptSections: string[],
+  apiKey?: string
+): Promise<string[]> {
+  const client = createGeminiClient(apiKey);
 
   const originalPrompt = `You are an expert educational content creator.
 Create a compelling, fun, and engaging narration script about: "${topic}".
@@ -251,10 +266,9 @@ Output the rewritten script in the EXACT SAME JSON FORMAT as the original output
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-pro',
+      model: GEMINI_MODELS.text,
       contents: [{ role: 'user', parts: [{ text: sanitizePrompt }] }],
       config: {
-        temperature: 0.3,
         responseMimeType: 'application/json',
       }
     });
@@ -272,6 +286,9 @@ Output the rewritten script in the EXACT SAME JSON FORMAT as the original output
     }
   } catch (error) {
     console.error('[SANITIZATION] Error:', getErrorMessage(error));
+    if (isGeminiCreditsDepletedError(error)) {
+      throw new GeminiCreditsDepletedError();
+    }
     return blockedScriptSections;
   }
 }
@@ -283,19 +300,21 @@ Output the rewritten script in the EXACT SAME JSON FORMAT as the original output
 export async function generateImage(
   prompt: string,
   outputPath: string,
-  options: ImageOptions = {}
+  options: ImageOptions = {},
+  apiKey?: string
 ): Promise<string> {
-  const client = createGeminiClient();
+  const client = createGeminiClient(apiKey);
   const enhancedPrompt = prompt.trim();
   const aspectRatio = options.aspectRatio || '16:9';
+  const imageSize = options.imageSize || '1K';
 
-  const FLASH_MODEL = 'gemini-3.1-flash-image-preview';
-  const PRO_MODEL = 'gemini-3-pro-image-preview';
+  const FLASH_MODEL = GEMINI_MODELS.image;
+  const PRO_MODEL = GEMINI_MODELS.imageFallback;
 
   const streamImage = async (genClient: ReturnType<typeof createGeminiClient>, model: string): Promise<Buffer> => {
     const config = {
       responseModalities: [Modality.IMAGE, Modality.TEXT],
-      imageConfig: { aspectRatio, imageSize: '1K' },
+      imageConfig: { aspectRatio, imageSize },
     };
     const contents = [{ role: 'user' as const, parts: [{ text: enhancedPrompt }] }];
     const response = await genClient.models.generateContentStream({ model, config, contents });
@@ -303,7 +322,7 @@ export async function generateImage(
     let imageBuffer: Buffer | null = null;
     for await (const chunk of response) {
       if (chunk.candidates?.[0]?.finishReason === 'IMAGE_SAFETY') throw new GeminiImageSafetyError();
-      const inlineData = chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      const inlineData = chunk.candidates?.[0]?.content?.parts?.find((part) => part.inlineData)?.inlineData;
       if (inlineData?.data) imageBuffer = Buffer.from(inlineData.data, 'base64');
     }
 
@@ -330,6 +349,10 @@ export async function generateImage(
       throw error;
     }
 
+    if (isGeminiCreditsDepletedError(error)) {
+      throw new GeminiCreditsDepletedError();
+    }
+
     const errorDetails = getErrorDetails(error);
     console.error('Gemini generateImage raw error:', {
       status: errorDetails.status,
@@ -339,8 +362,8 @@ export async function generateImage(
 
     const isRateLimit = isRetryableGeminiError(error);
 
-    // Try backup key on rate limit/overload
-    if (isRateLimit && process.env.GEMINI_API_KEY2) {
+    // Preserve the optional local fallback key, but never substitute it for BYOK requests.
+    if (!apiKey && isRateLimit && process.env.GEMINI_API_KEY2) {
       console.warn('Primary Gemini key exhausted. Retrying with GEMINI_API_KEY2...');
       try {
         const backupClient = createGeminiClient(process.env.GEMINI_API_KEY2);
@@ -357,7 +380,7 @@ export async function generateImage(
     }
 
     console.error('Error generating image:', error);
-    return '';
+    throw error;
   }
 }
 

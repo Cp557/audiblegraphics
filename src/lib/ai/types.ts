@@ -39,6 +39,7 @@ export interface GenerationOptions {
 export interface AudioOptions {
   model?: string;
   voice?: string;
+  apiKey?: string;
   encoding?: 'linear16' | 'mulaw' | 'alaw' | 'mp3' | 'opus' | 'flac' | 'aac';
   sampleRate?: number;
 }

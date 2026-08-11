@@ -1,42 +1,55 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface SettingsContextType {
-  autoplayAudio: boolean;
-  setAutoplayAudio: (value: boolean) => void;
+  geminiApiKey: string;
+  setGeminiApiKey: (value: string) => void;
+  clearGeminiApiKey: () => void;
+  settingsOpen: boolean;
+  setSettingsOpen: (value: boolean) => void;
+  requireGeminiApiKey: () => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'audible-slides-settings';
+const API_KEY_STORAGE_KEY = 'audiblegraphics-gemini-api-key';
 
 interface SettingsProviderProps {
   children: ReactNode;
 }
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
-  const [autoplayAudio, setAutoplayAudioState] = useState(readStoredAutoplayAudio);
+  const [geminiApiKey, setGeminiApiKeyState] = useState(readStoredApiKey);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // Save settings to localStorage whenever they change
-  useEffect(() => {
+  const setGeminiApiKey = (value: string) => {
+    const trimmedValue = value.trim();
+    setGeminiApiKeyState(trimmedValue);
     try {
-      const settings = {
-        autoplayAudio,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      if (trimmedValue) {
+        window.sessionStorage.setItem(API_KEY_STORAGE_KEY, trimmedValue);
+      } else {
+        window.sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+      }
     } catch (error) {
-      console.error('Failed to save settings to localStorage:', error);
+      console.error('Failed to save the Gemini API key for this tab:', error);
     }
-  }, [autoplayAudio]);
+  };
 
-  const setAutoplayAudio = (value: boolean) => {
-    setAutoplayAudioState(value);
+  const clearGeminiApiKey = () => setGeminiApiKey('');
+
+  const requireGeminiApiKey = () => {
+    setSettingsOpen(true);
   };
 
   const value = {
-    autoplayAudio,
-    setAutoplayAudio,
+    geminiApiKey,
+    setGeminiApiKey,
+    clearGeminiApiKey,
+    settingsOpen,
+    setSettingsOpen,
+    requireGeminiApiKey,
   };
 
   return (
@@ -46,17 +59,12 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
   );
 }
 
-function readStoredAutoplayAudio(): boolean {
-  if (typeof window === 'undefined') return false;
-
+function readStoredApiKey(): string {
+  if (typeof window === 'undefined') return '';
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) return false;
-    const settings = JSON.parse(stored) as { autoplayAudio?: boolean };
-    return settings.autoplayAudio ?? false;
-  } catch (error) {
-    console.error('Failed to load settings from localStorage:', error);
-    return false;
+    return window.sessionStorage.getItem(API_KEY_STORAGE_KEY) || '';
+  } catch {
+    return '';
   }
 }
 
