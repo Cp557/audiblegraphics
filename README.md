@@ -2,7 +2,15 @@
 
 Generate narrated infographics using your own Google Gemini API key. Enter any topic and get a full-screen infographic with an AI-generated narration script and audio. Your projects stay in your browser.
 
-![AudibleGraphics screenshot](public/screenshot.png)
+## Examples
+
+### Marcus Aurelius
+
+https://github.com/user-attachments/assets/99b58f9d-c39c-4b42-a3e3-f4bf3569471e
+
+### Snow Leopards
+
+https://github.com/user-attachments/assets/ab58daba-5dbf-4435-a976-bfa4b88b6eed
 
 ## Features
 
