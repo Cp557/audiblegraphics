@@ -76,10 +76,10 @@ MP4 export runs in the browser with FFmpeg WebAssembly. The first export downloa
 The defaults can be overridden with environment variables:
 
 ```env
-GEMINI_TEXT_MODEL=gemini-3.6-flash
+GEMINI_TEXT_MODEL=gemini-flash-latest
 GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
 GEMINI_IMAGE_FALLBACK_MODEL=gemini-3-pro-image
-GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview
+GEMINI_TTS_MODEL=gemini-3.8-flash-tts
 ```
 
 ## Tech Stack
